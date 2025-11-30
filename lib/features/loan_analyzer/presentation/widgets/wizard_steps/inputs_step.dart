@@ -5,7 +5,7 @@ import '../../../../../shared/widgets/navigation_buttons.dart';
 import '../../../../../shared/widgets/sticky_navigation_footer.dart';
 import '../section.dart';
 
-class InputsStep extends StatelessWidget {
+class InputsStep extends StatefulWidget {
   final VoidCallback onNext;
   final int currentStep;
 
@@ -14,6 +14,13 @@ class InputsStep extends StatelessWidget {
     required this.onNext,
     required this.currentStep,
   });
+
+  @override
+  State<InputsStep> createState() => _InputsStepState();
+}
+
+class _InputsStepState extends State<InputsStep> {
+  bool _useRdFd = false;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +39,7 @@ class InputsStep extends StatelessWidget {
                     Text('💡 Let\'s Get Started', style: AppTheme.heading2),
                     const SizedBox(height: AppTheme.space8),
                     Text(
-                      'Enter your loan details to begin analyzing repayment strategies',
+                      'Share your loan details, investment preferences, and tax information to get started',
                       style: AppTheme.bodyLarge.copyWith(
                         color: AppTheme.neutral600,
                       ),
@@ -44,7 +51,11 @@ class InputsStep extends StatelessWidget {
 
                     const SizedBox(height: AppTheme.space32),
 
-                    _buildRateScheduleSection(),
+                    _buildRdFdSection(),
+
+                    const SizedBox(height: AppTheme.space32),
+
+                    _buildTaxDetailsSection(),
 
                     const SizedBox(height: AppTheme.space24),
                   ],
@@ -56,7 +67,7 @@ class InputsStep extends StatelessWidget {
         StickyNavigationFooter(
           child: NavigationButtons(
             showContinue: true,
-            onContinuePressed: onNext,
+            onContinuePressed: widget.onNext,
           ),
         ),
       ],
@@ -69,6 +80,34 @@ class InputsStep extends StatelessWidget {
       subtitle: 'Basic details about your loan',
       child: Column(
         children: [
+          // Loan Amount
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Loan Amount', style: AppTheme.labelLarge),
+              const SizedBox(height: AppTheme.space8),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: '30,00,000',
+                  prefixText: '₹ ',
+                  prefixStyle: AppTheme.bodyLarge.copyWith(
+                    color: AppTheme.neutral600,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  suffixIcon: const Icon(
+                    Icons.currency_rupee_rounded,
+                    size: 18,
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppTheme.space20),
+
+          // Tenure and Interest Rate
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -76,19 +115,15 @@ class InputsStep extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Loan Amount', style: AppTheme.labelLarge),
+                    Text('Loan Tenure', style: AppTheme.labelLarge),
                     const SizedBox(height: AppTheme.space8),
                     TextField(
-                      decoration: InputDecoration(
-                        hintText: '3,000,000',
-                        prefixText: '₹ ',
-                        prefixStyle: AppTheme.bodyLarge.copyWith(
+                      decoration: const InputDecoration(
+                        hintText: '360',
+                        suffixText: 'months',
+                        suffixStyle: TextStyle(
                           color: AppTheme.neutral600,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        suffixIcon: const Icon(
-                          Icons.currency_rupee_rounded,
-                          size: 18,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       keyboardType: TextInputType.number,
@@ -102,19 +137,25 @@ class InputsStep extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Loan Tenure', style: AppTheme.labelLarge),
+                    Text('Interest Rate', style: AppTheme.labelLarge),
                     const SizedBox(height: AppTheme.space8),
                     TextField(
                       decoration: const InputDecoration(
-                        hintText: '30',
-                        suffixText: 'years',
+                        hintText: '8.5',
+                        suffixText: '% p.a.',
                         suffixStyle: TextStyle(
                           color: AppTheme.neutral600,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d+\.?\d{0,2}'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -156,162 +197,506 @@ class InputsStep extends StatelessWidget {
     );
   }
 
-  Widget _buildRateScheduleSection() {
+  Widget _buildRdFdSection() {
     return Section(
-      title: '💹 Interest Rate Schedule',
-      subtitle: 'Define how your interest rate changes over time',
-      headerActions: [
-        OutlinedButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('Add Rate Change'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.space16,
-              vertical: AppTheme.space12,
-            ),
-          ),
-        ),
-      ],
+      title: '💰 RD/FD Investment Details',
+      subtitle: 'Want to invest extra payments? Monthly surplus goes to RD, bonuses/incentives go to FD. Payment amounts can be set in the next step.',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sample rate entry
-          _RateEntryRow(
-            fromMonth: 1,
-            toMonth: 12,
-            rate: 7.75,
-            onEdit: () {},
-            onDelete: () {},
-          ),
-
-          const SizedBox(height: AppTheme.space12),
-
-          _RateEntryRow(
-            fromMonth: 13,
-            toMonth: 360,
-            rate: 8.25,
-            onEdit: () {},
-            onDelete: () {},
-          ),
-
-          const SizedBox(height: AppTheme.space20),
-
-          // Add rate placeholder
-          InkWell(
-            onTap: () {},
-            borderRadius: AppTheme.borderRadiusMedium,
-            child: Container(
-              padding: const EdgeInsets.all(AppTheme.space16),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppTheme.neutral300,
-                  style: BorderStyle.solid,
-                  width: 1.5,
-                ),
-                borderRadius: AppTheme.borderRadiusMedium,
+          // Toggle switch
+          Container(
+            padding: const EdgeInsets.all(AppTheme.space16),
+            decoration: BoxDecoration(
+              color: _useRdFd
+                  ? AppTheme.accentGreenLight
+                  : AppTheme.backgroundSecondary,
+              borderRadius: AppTheme.borderRadiusMedium,
+              border: Border.all(
+                color: _useRdFd
+                    ? AppTheme.accentGreen.withOpacity(0.3)
+                    : AppTheme.neutral200,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.add_circle_outline_rounded,
-                    color: AppTheme.neutral500,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _useRdFd ? AppTheme.accentGreen : AppTheme.neutral400,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    _useRdFd ? Icons.account_balance : Icons.savings_outlined,
+                    color: Colors.white,
                     size: 20,
                   ),
-                  const SizedBox(width: AppTheme.space8),
-                  Text(
-                    'Add another rate period',
-                    style: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.neutral600,
-                      fontWeight: FontWeight.w500,
-                    ),
+                ),
+                const SizedBox(width: AppTheme.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Include RD/FD Strategy',
+                        style: AppTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _useRdFd
+                            ? 'RD/FD details will be considered'
+                            : 'Enable to compare with investment strategy',
+                        style: AppTheme.bodySmall.copyWith(
+                          color: AppTheme.neutral600,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RateEntryRow extends StatelessWidget {
-  final int fromMonth;
-  final int toMonth;
-  final double rate;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  const _RateEntryRow({
-    required this.fromMonth,
-    required this.toMonth,
-    required this.rate,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.space16),
-      decoration: BoxDecoration(
-        color: AppTheme.backgroundSecondary,
-        borderRadius: AppTheme.borderRadiusMedium,
-        border: Border.all(color: AppTheme.neutral200),
-      ),
-      child: Row(
-        children: [
-          // Period indicator
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppTheme.accentOrange, Color(0xFFF59E0B)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: AppTheme.borderRadiusMedium,
-            ),
-            child: const Icon(
-              Icons.calendar_month_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-
-          const SizedBox(width: AppTheme.space16),
-
-          // Period details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Month $fromMonth - $toMonth', style: AppTheme.labelLarge),
-                const SizedBox(height: AppTheme.space4),
-                Text(
-                  'Interest Rate: $rate% p.a.',
-                  style: AppTheme.bodyMedium.copyWith(
-                    color: AppTheme.neutral600,
-                  ),
+                ),
+                Switch(
+                  value: _useRdFd,
+                  onChanged: (value) {
+                    setState(() {
+                      _useRdFd = value;
+                    });
+                  },
+                  activeColor: AppTheme.accentGreen,
                 ),
               ],
             ),
           ),
 
-          // Actions
-          IconButton(
-            onPressed: onEdit,
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            tooltip: 'Edit',
-            style: IconButton.styleFrom(foregroundColor: AppTheme.neutral600),
+          if (_useRdFd) ...[
+            const SizedBox(height: AppTheme.space24),
+
+            // RD Details
+            Container(
+              padding: const EdgeInsets.all(AppTheme.space20),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundSecondary,
+                borderRadius: AppTheme.borderRadiusLarge,
+                border: Border.all(color: AppTheme.neutral200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlue,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.calendar_today_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.space8),
+                      Text(
+                        'Recurring Deposit (RD)',
+                        style: AppTheme.heading4.copyWith(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.space16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Months', style: AppTheme.labelMedium),
+                            const SizedBox(height: AppTheme.space8),
+                            TextField(
+                              decoration: const InputDecoration(
+                                hintText: '12',
+                                suffixText: 'months',
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.space16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Interest Rate', style: AppTheme.labelMedium),
+                            const SizedBox(height: AppTheme.space8),
+                            TextField(
+                              decoration: const InputDecoration(
+                                hintText: '6.5',
+                                suffixText: '% p.a.',
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                              keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+\.?\d{0,2}'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.space12),
+                  // RD Note
+                  Container(
+                    padding: const EdgeInsets.all(AppTheme.space12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryBlueSubtle,
+                      borderRadius: AppTheme.borderRadiusMedium,
+                      border: Border.all(
+                        color: AppTheme.primaryBlue.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: AppTheme.primaryBlue,
+                          size: 16,
+                        ),
+                        const SizedBox(width: AppTheme.space8),
+                        Expanded(
+                          child: Text(
+                            'Once RD tenure is over, principal and accrued interest (after tax) will be added to FD account',
+                            style: AppTheme.bodySmall.copyWith(
+                              color: AppTheme.primaryBlueDark,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: AppTheme.space16),
+
+            // FD Details
+            Container(
+              padding: const EdgeInsets.all(AppTheme.space20),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundSecondary,
+                borderRadius: AppTheme.borderRadiusLarge,
+                border: Border.all(color: AppTheme.neutral200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentOrange,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.trending_up_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.space8),
+                      Text(
+                        'Fixed Deposit (FD)',
+                        style: AppTheme.heading4.copyWith(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.space16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Months', style: AppTheme.labelMedium),
+                            const SizedBox(height: AppTheme.space8),
+                            TextField(
+                              decoration: const InputDecoration(
+                                hintText: '60',
+                                suffixText: 'months',
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.space16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Interest Rate', style: AppTheme.labelMedium),
+                            const SizedBox(height: AppTheme.space8),
+                            TextField(
+                              decoration: const InputDecoration(
+                                hintText: '7.0',
+                                suffixText: '% p.a.',
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                              keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+\.?\d{0,2}'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.space12),
+                  // FD Note
+                  Container(
+                    padding: const EdgeInsets.all(AppTheme.space12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentOrangeLight,
+                      borderRadius: AppTheme.borderRadiusMedium,
+                      border: Border.all(
+                        color: AppTheme.accentOrange.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: AppTheme.accentOrange,
+                          size: 16,
+                        ),
+                        const SizedBox(width: AppTheme.space8),
+                        Expanded(
+                          child: Text(
+                            'After tenure is over, principal and accrued interest (after tax) will be reinvested in FD again',
+                            style: AppTheme.bodySmall.copyWith(
+                              color: AppTheme.neutral800,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaxDetailsSection() {
+    return Section(
+      title: '📋 Tax Details',
+      subtitle: 'Tax benefits and eligibility for home loan deductions',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Income Tax Slab
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Income Tax Slab', style: AppTheme.labelLarge),
+              const SizedBox(height: AppTheme.space8),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  hintText: 'Select your tax slab',
+                ),
+                items: const [
+                  DropdownMenuItem(value: '0', child: Text('No Tax (0%)')),
+                  DropdownMenuItem(value: '5', child: Text('5%')),
+                  DropdownMenuItem(value: '10', child: Text('10%')),
+                  DropdownMenuItem(value: '15', child: Text('15%')),
+                  DropdownMenuItem(value: '20', child: Text('20%')),
+                  DropdownMenuItem(value: '25', child: Text('25%')),
+                  DropdownMenuItem(value: '30', child: Text('30%')),
+                ],
+                onChanged: (value) {},
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline_rounded, size: 18),
-            tooltip: 'Delete',
-            style: IconButton.styleFrom(foregroundColor: AppTheme.accentRed),
+
+          const SizedBox(height: AppTheme.space20),
+
+          // Section 80C Eligibility
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Section 80C Eligibility', style: AppTheme.labelLarge),
+                  const SizedBox(width: AppTheme.space8),
+                  Tooltip(
+                    message:
+                    'Maximum ₹1,50,000 deduction for principal repayment\nEnter remaining eligibility after other 80C investments',
+                    child: Icon(
+                      Icons.help_outline_rounded,
+                      size: 16,
+                      color: AppTheme.neutral500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.space8),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: '1,50,000',
+                  helperText: 'After deducting your other 80C investments',
+                  helperStyle: AppTheme.bodySmall.copyWith(
+                    color: AppTheme.neutral500,
+                  ),
+                  prefixText: '₹ ',
+                  prefixStyle: AppTheme.bodyLarge.copyWith(
+                    color: AppTheme.neutral600,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  suffixIcon: const Icon(
+                    Icons.currency_rupee_rounded,
+                    size: 18,
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppTheme.space20),
+
+          // Section 24(B) Eligibility
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Section 24(B) Eligibility', style: AppTheme.labelLarge),
+                  const SizedBox(width: AppTheme.space8),
+                  Tooltip(
+                    message:
+                    'Maximum ₹2,00,000 deduction for interest payment\non self-occupied property',
+                    child: Icon(
+                      Icons.help_outline_rounded,
+                      size: 16,
+                      color: AppTheme.neutral500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.space8),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: '2,00,000',
+                  helperText: 'Maximum deduction for interest paid',
+                  helperStyle: AppTheme.bodySmall.copyWith(
+                    color: AppTheme.neutral500,
+                  ),
+                  prefixText: '₹ ',
+                  prefixStyle: AppTheme.bodyLarge.copyWith(
+                    color: AppTheme.neutral600,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  suffixIcon: const Icon(
+                    Icons.currency_rupee_rounded,
+                    size: 18,
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppTheme.space20),
+
+          // Info card about tax benefits
+          Container(
+            padding: const EdgeInsets.all(AppTheme.space16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.accentGreenLight,
+                  AppTheme.accentGreenLight.withOpacity(0.5),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: AppTheme.borderRadiusMedium,
+              border: Border.all(
+                color: AppTheme.accentGreen.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.lightbulb_outline_rounded,
+                  color: AppTheme.accentGreen,
+                  size: 20,
+                ),
+                const SizedBox(width: AppTheme.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tax Benefits Summary',
+                        style: AppTheme.labelLarge.copyWith(
+                          color: AppTheme.accentGreen,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '• 80C: Up to ₹1.5L on principal repayment\n'
+                            '• 24(B): Up to ₹2L on interest payment\n'
+                            '• Total potential savings based on your tax slab',
+                        style: AppTheme.bodySmall.copyWith(
+                          color: AppTheme.neutral800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
