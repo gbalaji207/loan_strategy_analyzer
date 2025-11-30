@@ -1,48 +1,63 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
+
 class StepProgressIndicator extends StatelessWidget {
   final int currentStep; // 1, 2, 3, or 4
 
-  const StepProgressIndicator({
-    super.key,
-    required this.currentStep,
-  });
+  const StepProgressIndicator({super.key, required this.currentStep});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _StepIndicator(
-            label: 'Inputs',
-            number: 1,
-            isActive: currentStep >= 1,
-            isComplete: currentStep > 1,
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppTheme.space24,
+        horizontal: AppTheme.space16,
+      ),
+      color: AppTheme.backgroundSecondary,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Row(
+            children: [
+              Expanded(
+                child: _StepIndicator(
+                  label: 'Inputs',
+                  number: 1,
+                  isActive: currentStep >= 1,
+                  isComplete: currentStep > 1,
+                ),
+              ),
+              _StepConnector(isActive: currentStep > 1),
+              Expanded(
+                child: _StepIndicator(
+                  label: 'Payment Plan',
+                  number: 2,
+                  isActive: currentStep >= 2,
+                  isComplete: currentStep > 2,
+                ),
+              ),
+              _StepConnector(isActive: currentStep > 2),
+              Expanded(
+                child: _StepIndicator(
+                  label: 'Strategies',
+                  number: 3,
+                  isActive: currentStep >= 3,
+                  isComplete: currentStep > 3,
+                ),
+              ),
+              _StepConnector(isActive: currentStep > 3),
+              Expanded(
+                child: _StepIndicator(
+                  label: 'Results',
+                  number: 4,
+                  isActive: currentStep >= 4,
+                  isComplete: false,
+                ),
+              ),
+            ],
           ),
-          _StepConnector(isActive: currentStep > 1),
-          _StepIndicator(
-            label: 'Payment Plan',
-            number: 2,
-            isActive: currentStep >= 2,
-            isComplete: currentStep > 2,
-          ),
-          _StepConnector(isActive: currentStep > 2),
-          _StepIndicator(
-            label: 'Select Strategies',
-            number: 3,
-            isActive: currentStep >= 3,
-            isComplete: currentStep > 3,
-          ),
-          _StepConnector(isActive: currentStep > 3),
-          _StepIndicator(
-            label: 'Results',
-            number: 4,
-            isActive: currentStep >= 4,
-            isComplete: false,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -64,38 +79,63 @@ class _StepIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 40,
-          height: 40,
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isComplete
-                ? Colors.green
-                : isActive
-                ? Colors.blue
-                : Colors.grey.shade300,
+            gradient: isComplete || isActive
+                ? const LinearGradient(
+                    colors: [AppTheme.primaryBlue, AppTheme.primaryBlueDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: (!isComplete && !isActive) ? AppTheme.neutral200 : null,
+            boxShadow: isActive && !isComplete
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primaryBlue.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
           child: Center(
-            child: isComplete
-                ? const Icon(Icons.check, color: Colors.white, size: 20)
-                : Text(
-              '$number',
-              style: TextStyle(
-                color: isActive ? Colors.white : Colors.grey.shade600,
-                fontWeight: FontWeight.bold,
-              ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: isComplete
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 22,
+                      key: ValueKey('check'),
+                    )
+                  : Text(
+                      '$number',
+                      key: ValueKey('number-$number'),
+                      style: TextStyle(
+                        color: isActive ? Colors.white : AppTheme.neutral500,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppTheme.space8),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            color: isActive ? Colors.black : Colors.grey.shade600,
+          style: AppTheme.labelMedium.copyWith(
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+            color: isActive ? AppTheme.neutral900 : AppTheme.neutral500,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -109,11 +149,20 @@ class _StepConnector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 60,
-      height: 2,
-      margin: const EdgeInsets.only(bottom: 30),
-      color: isActive ? Colors.blue : Colors.grey.shade300,
+    return Expanded(
+      child: Container(
+        height: 2,
+        margin: const EdgeInsets.only(bottom: 34, left: 8, right: 8),
+        decoration: BoxDecoration(
+          gradient: isActive
+              ? const LinearGradient(
+                  colors: [AppTheme.primaryBlue, AppTheme.primaryBlueDark],
+                )
+              : null,
+          color: !isActive ? AppTheme.neutral200 : null,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
     );
   }
 }

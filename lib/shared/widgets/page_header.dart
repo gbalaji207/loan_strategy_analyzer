@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme/app_theme.dart';
 
 class PageHeader extends StatelessWidget {
   final String title;
@@ -22,39 +23,69 @@ class PageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.space24,
+        vertical: AppTheme.space16,
+      ),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+        color: AppTheme.backgroundPrimary,
+        border: Border(
+          bottom: BorderSide(
+            color: AppTheme.neutral200,
+            width: 1,
           ),
-        ],
+        ),
+        boxShadow: AppTheme.shadowSmall,
       ),
       child: Row(
         children: [
           if (showBackButton) ...[
             IconButton(
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back_rounded),
               onPressed: onBackPressed ?? () => context.pop(),
               tooltip: 'Back',
+              style: IconButton.styleFrom(
+                foregroundColor: AppTheme.neutral700,
+                backgroundColor: AppTheme.neutral100,
+                padding: const EdgeInsets.all(8),
+              ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppTheme.space16),
           ],
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+
+          // Logo/Icon
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppTheme.primaryBlue, AppTheme.primaryBlueDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: AppTheme.borderRadiusMedium,
+            ),
+            child: const Icon(
+              Icons.account_balance_rounded,
+              color: Colors.white,
+              size: 20,
             ),
           ),
+
+          const SizedBox(width: AppTheme.space12),
+
+          Text(
+            title,
+            style: AppTheme.heading3.copyWith(
+              fontSize: 18,
+              letterSpacing: -0.3,
+            ),
+          ),
+
           const Spacer(),
+
           if (actions != null) ...actions!,
         ],
       ),
     );
   }
 }
-

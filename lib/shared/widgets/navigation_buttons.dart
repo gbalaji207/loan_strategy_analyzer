@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme/app_theme.dart';
 
 class NavigationButtons extends StatelessWidget {
   final bool showBack;
@@ -32,8 +33,14 @@ class NavigationButtons extends StatelessWidget {
       buttons.add(
         OutlinedButton.icon(
           onPressed: onBackPressed ?? () => context.pop(),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_rounded, size: 18),
           label: Text(backLabel),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.space20,
+              vertical: AppTheme.space16,
+            ),
+          ),
         ),
       );
     }
@@ -46,36 +53,31 @@ class NavigationButtons extends StatelessWidget {
     // Add continue button if needed
     if (showContinue) {
       buttons.add(
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: onContinuePressed,
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 16,
+              horizontal: AppTheme.space24,
+              vertical: AppTheme.space16,
             ),
+            elevation: 0,
+            shadowColor: AppTheme.primaryBlue.withOpacity(0.3),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(continueLabel),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward),
-            ],
-          ),
+          label: Text(continueLabel),
+          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+          iconAlignment: IconAlignment.end,
         ),
       );
     }
 
     // If only continue button, align to the right
     MainAxisAlignment finalAlignment = alignment;
-    if (!showBack && showContinue && (additionalButtons == null || additionalButtons!.isEmpty)) {
+    if (!showBack &&
+        showContinue &&
+        (additionalButtons == null || additionalButtons!.isEmpty)) {
       finalAlignment = MainAxisAlignment.end;
     }
 
-    return Row(
-      mainAxisAlignment: finalAlignment,
-      children: buttons,
-    );
+    return Row(mainAxisAlignment: finalAlignment, children: buttons);
   }
 }
-

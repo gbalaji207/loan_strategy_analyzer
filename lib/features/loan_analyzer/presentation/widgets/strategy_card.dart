@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
+
 class StrategyCard extends StatelessWidget {
   final String title;
   final String description;
@@ -20,20 +22,117 @@ class StrategyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: isSelected ? 4 : 1,
-      child: CheckboxListTile(
-        value: isSelected,
-        onChanged: isEnabled ? onChanged : null,
-        secondary: Icon(icon, size: 32),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: isEnabled ? null : Colors.grey,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundPrimary,
+        borderRadius: AppTheme.borderRadiusLarge,
+        border: Border.all(
+          color: isSelected ? AppTheme.primaryBlue : AppTheme.neutral200,
+          width: isSelected ? 2 : 1.5,
+        ),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: AppTheme.primaryBlue.withOpacity(0.1),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : AppTheme.shadowSmall,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isEnabled ? () => onChanged(!isSelected) : null,
+          borderRadius: AppTheme.borderRadiusLarge,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.space20),
+            child: Row(
+              children: [
+                // Icon
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: isSelected
+                        ? const LinearGradient(
+                            colors: [
+                              AppTheme.primaryBlue,
+                              AppTheme.primaryBlueDark,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    color: !isSelected
+                        ? (isEnabled ? AppTheme.neutral100 : AppTheme.neutral50)
+                        : null,
+                    borderRadius: AppTheme.borderRadiusMedium,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 28,
+                    color: isSelected
+                        ? Colors.white
+                        : (isEnabled
+                              ? AppTheme.neutral600
+                              : AppTheme.neutral400),
+                  ),
+                ),
+
+                const SizedBox(width: AppTheme.space16),
+
+                // Text content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTheme.heading4.copyWith(
+                          fontSize: 16,
+                          color: isEnabled
+                              ? AppTheme.neutral900
+                              : AppTheme.neutral400,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.space4),
+                      Text(
+                        description,
+                        style: AppTheme.bodyMedium.copyWith(
+                          color: isEnabled
+                              ? AppTheme.neutral600
+                              : AppTheme.neutral400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: AppTheme.space16),
+
+                // Checkbox
+                Transform.scale(
+                  scale: 1.2,
+                  child: Checkbox(
+                    value: isSelected,
+                    onChanged: isEnabled ? onChanged : null,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    side: BorderSide(
+                      color: isEnabled
+                          ? AppTheme.neutral300
+                          : AppTheme.neutral200,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        subtitle: Text(description),
       ),
     );
   }
