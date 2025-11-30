@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../shared/widgets/navigation_buttons.dart';
 import '../../../../../shared/widgets/sticky_navigation_footer.dart';
 import '../../../domain/strategy_definitions.dart';
+import '../../cubit/loan_input_cubit.dart';
+import '../../cubit/loan_input_state.dart';
 import '../section.dart';
 import '../strategy_card.dart';
 
@@ -22,85 +25,158 @@ class InputsStep extends StatefulWidget {
 }
 
 class _InputsStepState extends State<InputsStep> {
-  // Selected strategy IDs
-  final Set<String> _selectedStrategyIds = {'prepay_principal'};
+  // Text editing controllers
+  final _loanAmountController = TextEditingController();
+  final _tenureController = TextEditingController();
+  final _interestRateController = TextEditingController();
+  final _rdMonthsController = TextEditingController();
+  final _rdRateController = TextEditingController();
+  final _fdMonthsController = TextEditingController();
+  final _fdRateController = TextEditingController();
+  final _section80cController = TextEditingController();
+  final _section24bController = TextEditingController();
 
-  // Helper to check if RD/FD section should be shown
-  bool get _shouldShowRdFd =>
-      StrategyDefinitions.requiresRdFdConfig(_selectedStrategyIds.toList());
-
-  void _toggleStrategy(String strategyId, bool? selected) {
-    final strategy = StrategyDefinitions.getById(strategyId);
-    if (strategy == null || strategy.isRequired) return;
-
-    setState(() {
-      if (selected == true) {
-        _selectedStrategyIds.add(strategyId);
-      } else {
-        _selectedStrategyIds.remove(strategyId);
-      }
+  @override
+  void initState() {
+    super.initState();
+    // Initialize controllers with existing state values
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeControllers();
     });
+  }
+
+  void _initializeControllers() {
+    final state = context.read<LoanInputCubit>().state;
+
+    // Loan config
+    if (state.loanConfig.loanAmount > 0) {
+      _loanAmountController.text = state.loanConfig.loanAmount.toStringAsFixed(0);
+    }
+    if (state.loanConfig.tenureMonths > 0) {
+      _tenureController.text = state.loanConfig.tenureMonths.toString();
+    }
+    if (state.loanConfig.interestRate > 0) {
+      _interestRateController.text = state.loanConfig.interestRate.toString();
+    }
+
+    // RD config
+    if (state.rdFdConfig.rdConfig.months > 0) {
+      _rdMonthsController.text = state.rdFdConfig.rdConfig.months.toString();
+    }
+    if (state.rdFdConfig.rdConfig.interestRate > 0) {
+      _rdRateController.text = state.rdFdConfig.rdConfig.interestRate.toString();
+    }
+
+    // FD config
+    if (state.rdFdConfig.fdConfig.months > 0) {
+      _fdMonthsController.text = state.rdFdConfig.fdConfig.months.toString();
+    }
+    if (state.rdFdConfig.fdConfig.interestRate > 0) {
+      _fdRateController.text = state.rdFdConfig.fdConfig.interestRate.toString();
+    }
+
+    // Tax config
+    if (state.taxConfig.section80cEligibility > 0) {
+      _section80cController.text = state.taxConfig.section80cEligibility.toStringAsFixed(0);
+    }
+    if (state.taxConfig.section24bEligibility > 0) {
+      _section24bController.text = state.taxConfig.section24bEligibility.toStringAsFixed(0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _loanAmountController.dispose();
+    _tenureController.dispose();
+    _interestRateController.dispose();
+    _rdMonthsController.dispose();
+    _rdRateController.dispose();
+    _fdMonthsController.dispose();
+    _fdRateController.dispose();
+    _section80cController.dispose();
+    _section24bController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppTheme.space24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Page title
-                    Text('💡 Let\'s Get Started', style: AppTheme.heading2),
-                    const SizedBox(height: AppTheme.space8),
-                    Text(
-                      'Share your loan details, investment preferences, and tax information to get started',
-                      style: AppTheme.bodyLarge.copyWith(
-                        color: AppTheme.neutral600,
-                      ),
+    return BlocBuilder<LoanInputCubit, LoanInputState>(
+      builder: (context, state) {
+        return Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppTheme.space24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Page title
+                        Text('💡 Let\'s Get Started', style: AppTheme.heading2),
+                        const SizedBox(height: AppTheme.space8),
+                        Text(
+                          'Share your loan details, investment preferences, and tax information to get started',
+                          style: AppTheme.bodyLarge.copyWith(
+                            color: AppTheme.neutral600,
+                          ),
+                        ),
+
+                        const SizedBox(height: AppTheme.space40),
+
+                        _buildLoanConfigSection(state),
+
+                        const SizedBox(height: AppTheme.space32),
+
+                        _buildStrategySelectionSection(state),
+
+                        // Conditionally show RD/FD section
+                        if (state.strategySelection.requiresRdFd) ...[
+                          const SizedBox(height: AppTheme.space32),
+                          _buildRdFdSection(state),
+                        ],
+
+                        const SizedBox(height: AppTheme.space32),
+
+                        _buildTaxDetailsSection(state),
+
+                        const SizedBox(height: AppTheme.space24),
+                      ],
                     ),
-
-                    const SizedBox(height: AppTheme.space40),
-
-                    _buildLoanConfigSection(),
-
-                    const SizedBox(height: AppTheme.space32),
-
-                    _buildStrategySelectionSection(),
-
-                    // Conditionally show RD/FD section
-                    if (_shouldShowRdFd) ...[
-                      const SizedBox(height: AppTheme.space32),
-                      _buildRdFdSection(),
-                    ],
-
-                    const SizedBox(height: AppTheme.space32),
-
-                    _buildTaxDetailsSection(),
-
-                    const SizedBox(height: AppTheme.space24),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        StickyNavigationFooter(
-          child: NavigationButtons(
-            showContinue: true,
-            onContinuePressed: widget.onNext,
-          ),
-        ),
-      ],
+            StickyNavigationFooter(
+              child: NavigationButtons(
+                showContinue: true,
+                onContinuePressed: () => _handleContinue(context),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildLoanConfigSection() {
+  void _handleContinue(BuildContext context) {
+    final cubit = context.read<LoanInputCubit>();
+    if (cubit.validateForm()) {
+      widget.onNext();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            cubit.state.errorMessage ?? 'Please complete all required fields',
+          ),
+          backgroundColor: AppTheme.accentRed,
+        ),
+      );
+    }
+  }
+
+  Widget _buildLoanConfigSection(LoanInputState state) {
     return Section(
       title: '📊 Loan Configuration',
       subtitle: 'Basic details about your loan',
@@ -113,6 +189,7 @@ class _InputsStepState extends State<InputsStep> {
               Text('Loan Amount', style: AppTheme.labelLarge),
               const SizedBox(height: AppTheme.space8),
               TextField(
+                controller: _loanAmountController,
                 decoration: InputDecoration(
                   hintText: '30,00,000',
                   prefixText: '₹ ',
@@ -127,6 +204,11 @@ class _InputsStepState extends State<InputsStep> {
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (value) {
+                  final amount =
+                      double.tryParse(value.replaceAll(',', '')) ?? 0;
+                  context.read<LoanInputCubit>().updateLoanAmount(amount);
+                },
               ),
             ],
           ),
@@ -144,6 +226,7 @@ class _InputsStepState extends State<InputsStep> {
                     Text('Loan Tenure', style: AppTheme.labelLarge),
                     const SizedBox(height: AppTheme.space8),
                     TextField(
+                      controller: _tenureController,
                       decoration: const InputDecoration(
                         hintText: '360',
                         suffixText: 'months',
@@ -154,6 +237,10 @@ class _InputsStepState extends State<InputsStep> {
                       ),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) {
+                        final months = int.tryParse(value) ?? 0;
+                        context.read<LoanInputCubit>().updateLoanTenure(months);
+                      },
                     ),
                   ],
                 ),
@@ -166,6 +253,7 @@ class _InputsStepState extends State<InputsStep> {
                     Text('Interest Rate', style: AppTheme.labelLarge),
                     const SizedBox(height: AppTheme.space8),
                     TextField(
+                      controller: _interestRateController,
                       decoration: const InputDecoration(
                         hintText: '8.5',
                         suffixText: '% p.a.',
@@ -182,6 +270,10 @@ class _InputsStepState extends State<InputsStep> {
                           RegExp(r'^\d+\.?\d{0,2}'),
                         ),
                       ],
+                      onChanged: (value) {
+                        final rate = double.tryParse(value) ?? 0;
+                        context.read<LoanInputCubit>().updateInterestRate(rate);
+                      },
                     ),
                   ],
                 ),
@@ -191,7 +283,7 @@ class _InputsStepState extends State<InputsStep> {
 
           const SizedBox(height: AppTheme.space20),
 
-          // Info card
+          // Info card with calculated EMI
           Container(
             padding: const EdgeInsets.all(AppTheme.space16),
             decoration: BoxDecoration(
@@ -208,11 +300,23 @@ class _InputsStepState extends State<InputsStep> {
                 ),
                 const SizedBox(width: AppTheme.space12),
                 Expanded(
-                  child: Text(
-                    'These values will be used to calculate EMI and compare different repayment strategies',
-                    style: AppTheme.bodySmall.copyWith(
-                      color: AppTheme.primaryBlueDark,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Monthly EMI: ₹${state.emi > 0 ? state.emi.toStringAsFixed(2) : '0.00'}',
+                        style: AppTheme.labelLarge.copyWith(
+                          color: AppTheme.primaryBlueDark,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'These values will be used to calculate EMI and compare different repayment strategies',
+                        style: AppTheme.bodySmall.copyWith(
+                          color: AppTheme.primaryBlueDark,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -223,14 +327,14 @@ class _InputsStepState extends State<InputsStep> {
     );
   }
 
-  Widget _buildStrategySelectionSection() {
+  Widget _buildStrategySelectionSection(LoanInputState state) {
     return Section(
       title: '🎯 Select Strategies to Compare',
       subtitle: 'Choose one or more repayment strategies to analyze',
       child: Column(
         children: [
           ...StrategyDefinitions.all.map((strategy) {
-            final isSelected = _selectedStrategyIds.contains(strategy.id);
+            final isSelected = state.strategySelection.isSelected(strategy.id);
 
             return Padding(
               padding: const EdgeInsets.only(bottom: AppTheme.space16),
@@ -241,7 +345,11 @@ class _InputsStepState extends State<InputsStep> {
                 isSelected: isSelected,
                 isEnabled: strategy.isEnabled,
                 isComingSoon: strategy.isComingSoon,
-                onChanged: (selected) => _toggleStrategy(strategy.id, selected),
+                onChanged: (selected) {
+                  if (!strategy.isRequired) {
+                    context.read<LoanInputCubit>().toggleStrategy(strategy.id);
+                  }
+                },
               ),
             );
           }),
@@ -250,7 +358,7 @@ class _InputsStepState extends State<InputsStep> {
     );
   }
 
-  Widget _buildRdFdSection() {
+  Widget _buildRdFdSection(LoanInputState state) {
     return Section(
       title: '💰 RD/FD Investment Details',
       subtitle:
@@ -300,6 +408,7 @@ class _InputsStepState extends State<InputsStep> {
                           Text('Months', style: AppTheme.labelMedium),
                           const SizedBox(height: AppTheme.space8),
                           TextField(
+                            controller: _rdMonthsController,
                             decoration: const InputDecoration(
                               hintText: '12',
                               suffixText: 'months',
@@ -312,6 +421,12 @@ class _InputsStepState extends State<InputsStep> {
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly
                             ],
+                            onChanged: (value) {
+                              final months = int.tryParse(value) ?? 0;
+                              context
+                                  .read<LoanInputCubit>()
+                                  .updateRdMonths(months);
+                            },
                           ),
                         ],
                       ),
@@ -324,6 +439,7 @@ class _InputsStepState extends State<InputsStep> {
                           Text('Interest Rate', style: AppTheme.labelMedium),
                           const SizedBox(height: AppTheme.space8),
                           TextField(
+                            controller: _rdRateController,
                             decoration: const InputDecoration(
                               hintText: '6.5',
                               suffixText: '% p.a.',
@@ -340,6 +456,12 @@ class _InputsStepState extends State<InputsStep> {
                                 RegExp(r'^\d+\.?\d{0,2}'),
                               ),
                             ],
+                            onChanged: (value) {
+                              final rate = double.tryParse(value) ?? 0;
+                              context
+                                  .read<LoanInputCubit>()
+                                  .updateRdInterestRate(rate);
+                            },
                           ),
                         ],
                       ),
@@ -426,6 +548,7 @@ class _InputsStepState extends State<InputsStep> {
                           Text('Months', style: AppTheme.labelMedium),
                           const SizedBox(height: AppTheme.space8),
                           TextField(
+                            controller: _fdMonthsController,
                             decoration: const InputDecoration(
                               hintText: '60',
                               suffixText: 'months',
@@ -438,6 +561,12 @@ class _InputsStepState extends State<InputsStep> {
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly
                             ],
+                            onChanged: (value) {
+                              final months = int.tryParse(value) ?? 0;
+                              context
+                                  .read<LoanInputCubit>()
+                                  .updateFdMonths(months);
+                            },
                           ),
                         ],
                       ),
@@ -450,6 +579,7 @@ class _InputsStepState extends State<InputsStep> {
                           Text('Interest Rate', style: AppTheme.labelMedium),
                           const SizedBox(height: AppTheme.space8),
                           TextField(
+                            controller: _fdRateController,
                             decoration: const InputDecoration(
                               hintText: '7.0',
                               suffixText: '% p.a.',
@@ -466,6 +596,12 @@ class _InputsStepState extends State<InputsStep> {
                                 RegExp(r'^\d+\.?\d{0,2}'),
                               ),
                             ],
+                            onChanged: (value) {
+                              final rate = double.tryParse(value) ?? 0;
+                              context
+                                  .read<LoanInputCubit>()
+                                  .updateFdInterestRate(rate);
+                            },
                           ),
                         ],
                       ),
@@ -512,7 +648,7 @@ class _InputsStepState extends State<InputsStep> {
     );
   }
 
-  Widget _buildTaxDetailsSection() {
+  Widget _buildTaxDetailsSection(LoanInputState state) {
     return Section(
       title: '📋 Tax Details',
       subtitle: 'Tax benefits and eligibility for home loan deductions',
@@ -525,20 +661,27 @@ class _InputsStepState extends State<InputsStep> {
             children: [
               Text('Income Tax Slab', style: AppTheme.labelLarge),
               const SizedBox(height: AppTheme.space8),
-              DropdownButtonFormField<String>(
+              DropdownButtonFormField<int>(
                 decoration: const InputDecoration(
                   hintText: 'Select your tax slab',
                 ),
+                value: state.taxConfig.taxSlabPercentage > 0
+                    ? state.taxConfig.taxSlabPercentage
+                    : null,
                 items: const [
-                  DropdownMenuItem(value: '0', child: Text('No Tax (0%)')),
-                  DropdownMenuItem(value: '5', child: Text('5%')),
-                  DropdownMenuItem(value: '10', child: Text('10%')),
-                  DropdownMenuItem(value: '15', child: Text('15%')),
-                  DropdownMenuItem(value: '20', child: Text('20%')),
-                  DropdownMenuItem(value: '25', child: Text('25%')),
-                  DropdownMenuItem(value: '30', child: Text('30%')),
+                  DropdownMenuItem(value: 0, child: Text('No Tax (0%)')),
+                  DropdownMenuItem(value: 5, child: Text('5%')),
+                  DropdownMenuItem(value: 10, child: Text('10%')),
+                  DropdownMenuItem(value: 15, child: Text('15%')),
+                  DropdownMenuItem(value: 20, child: Text('20%')),
+                  DropdownMenuItem(value: 25, child: Text('25%')),
+                  DropdownMenuItem(value: 30, child: Text('30%')),
                 ],
-                onChanged: (value) {},
+                onChanged: (value) {
+                  if (value != null) {
+                    context.read<LoanInputCubit>().updateTaxSlab(value);
+                  }
+                },
               ),
             ],
           ),
@@ -566,6 +709,7 @@ class _InputsStepState extends State<InputsStep> {
               ),
               const SizedBox(height: AppTheme.space8),
               TextField(
+                controller: _section80cController,
                 decoration: InputDecoration(
                   hintText: '1,50,000',
                   helperText: 'After deducting your other 80C investments',
@@ -584,6 +728,11 @@ class _InputsStepState extends State<InputsStep> {
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (value) {
+                  final amount =
+                      double.tryParse(value.replaceAll(',', '')) ?? 0;
+                  context.read<LoanInputCubit>().updateSection80c(amount);
+                },
               ),
             ],
           ),
@@ -611,6 +760,7 @@ class _InputsStepState extends State<InputsStep> {
               ),
               const SizedBox(height: AppTheme.space8),
               TextField(
+                controller: _section24bController,
                 decoration: InputDecoration(
                   hintText: '2,00,000',
                   helperText: 'Maximum deduction for interest paid',
@@ -629,6 +779,11 @@ class _InputsStepState extends State<InputsStep> {
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (value) {
+                  final amount =
+                      double.tryParse(value.replaceAll(',', '')) ?? 0;
+                  context.read<LoanInputCubit>().updateSection24b(amount);
+                },
               ),
             ],
           ),
