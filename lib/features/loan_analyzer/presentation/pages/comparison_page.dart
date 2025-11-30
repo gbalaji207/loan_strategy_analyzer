@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/router/route_names.dart';
 import '../../../../shared/widgets/navigation_buttons.dart';
 import '../../../../shared/widgets/page_header.dart';
 import '../../../../shared/widgets/sticky_navigation_footer.dart';
@@ -37,9 +36,7 @@ class ComparisonPage extends StatelessWidget {
               ),
             ),
           ),
-          StickyNavigationFooter(
-            child: _buildNavigationButtons(context),
-          ),
+          StickyNavigationFooter(child: _buildNavigationButtons(context)),
         ],
       ),
     );
@@ -48,7 +45,7 @@ class ComparisonPage extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return PageHeader(
       title: 'Comparison',
-      onBackPressed: () => context.go(RoutePaths.resultsHub),
+      onBackPressed: () => context.pop(),
       actions: [
         IconButton(
           icon: const Icon(Icons.download),
@@ -198,7 +195,7 @@ class ComparisonPage extends StatelessWidget {
     return NavigationButtons(
       showBack: true,
       backLabel: 'Back to Results',
-      onBackPressed: () => context.go(RoutePaths.resultsHub),
+      onBackPressed: () => context.pop(),
     );
   }
 }
