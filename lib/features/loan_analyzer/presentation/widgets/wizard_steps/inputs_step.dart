@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../shared/widgets/navigation_buttons.dart';
 import '../../../../../shared/widgets/sticky_navigation_footer.dart';
+import '../../../domain/strategy_definitions.dart';
 import '../section.dart';
+import '../strategy_card.dart';
 
 class InputsStep extends StatefulWidget {
   final VoidCallback onNext;
@@ -20,7 +22,25 @@ class InputsStep extends StatefulWidget {
 }
 
 class _InputsStepState extends State<InputsStep> {
-  bool _useRdFd = false;
+  // Selected strategy IDs
+  final Set<String> _selectedStrategyIds = {'prepay_principal'};
+
+  // Helper to check if RD/FD section should be shown
+  bool get _shouldShowRdFd =>
+      StrategyDefinitions.requiresRdFdConfig(_selectedStrategyIds.toList());
+
+  void _toggleStrategy(String strategyId, bool? selected) {
+    final strategy = StrategyDefinitions.getById(strategyId);
+    if (strategy == null || strategy.isRequired) return;
+
+    setState(() {
+      if (selected == true) {
+        _selectedStrategyIds.add(strategyId);
+      } else {
+        _selectedStrategyIds.remove(strategyId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +71,13 @@ class _InputsStepState extends State<InputsStep> {
 
                     const SizedBox(height: AppTheme.space32),
 
-                    _buildRdFdSection(),
+                    _buildStrategySelectionSection(),
+
+                    // Conditionally show RD/FD section
+                    if (_shouldShowRdFd) ...[
+                      const SizedBox(height: AppTheme.space32),
+                      _buildRdFdSection(),
+                    ],
 
                     const SizedBox(height: AppTheme.space32),
 
@@ -197,328 +223,290 @@ class _InputsStepState extends State<InputsStep> {
     );
   }
 
+  Widget _buildStrategySelectionSection() {
+    return Section(
+      title: '🎯 Select Strategies to Compare',
+      subtitle: 'Choose one or more repayment strategies to analyze',
+      child: Column(
+        children: [
+          ...StrategyDefinitions.all.map((strategy) {
+            final isSelected = _selectedStrategyIds.contains(strategy.id);
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppTheme.space16),
+              child: StrategyCard(
+                title: strategy.title,
+                description: strategy.description,
+                icon: strategy.icon,
+                isSelected: isSelected,
+                isEnabled: strategy.isEnabled,
+                isComingSoon: strategy.isComingSoon,
+                onChanged: (selected) => _toggleStrategy(strategy.id, selected),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRdFdSection() {
     return Section(
       title: '💰 RD/FD Investment Details',
-      subtitle: 'Want to invest extra payments? Monthly surplus goes to RD, bonuses/incentives go to FD. Payment amounts can be set in the next step.',
+      subtitle:
+      'Monthly surplus goes to RD, bonuses/incentives go to FD. Payment amounts can be set in the next step.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Toggle switch
+          // RD Details
           Container(
-            padding: const EdgeInsets.all(AppTheme.space16),
+            padding: const EdgeInsets.all(AppTheme.space20),
             decoration: BoxDecoration(
-              color: _useRdFd
-                  ? AppTheme.accentGreenLight
-                  : AppTheme.backgroundSecondary,
-              borderRadius: AppTheme.borderRadiusMedium,
-              border: Border.all(
-                color: _useRdFd
-                    ? AppTheme.accentGreen.withOpacity(0.3)
-                    : AppTheme.neutral200,
-              ),
+              color: AppTheme.backgroundSecondary,
+              borderRadius: AppTheme.borderRadiusLarge,
+              border: Border.all(color: AppTheme.neutral200),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: _useRdFd ? AppTheme.accentGreen : AppTheme.neutral400,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    _useRdFd ? Icons.account_balance : Icons.savings_outlined,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBlue,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.calendar_today_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.space8),
+                    Text(
+                      'Recurring Deposit (RD)',
+                      style: AppTheme.heading4.copyWith(fontSize: 16),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: AppTheme.space12),
-                Expanded(
-                  child: Column(
+                const SizedBox(height: AppTheme.space16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Months', style: AppTheme.labelMedium),
+                          const SizedBox(height: AppTheme.space8),
+                          TextField(
+                            decoration: const InputDecoration(
+                              hintText: '12',
+                              suffixText: 'months',
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.space16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Interest Rate', style: AppTheme.labelMedium),
+                          const SizedBox(height: AppTheme.space8),
+                          TextField(
+                            decoration: const InputDecoration(
+                              hintText: '6.5',
+                              suffixText: '% p.a.',
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,2}'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTheme.space12),
+                // RD Note
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.space12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlueSubtle,
+                    borderRadius: AppTheme.borderRadiusMedium,
+                    border: Border.all(
+                      color: AppTheme.primaryBlue.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Include RD/FD Strategy',
-                        style: AppTheme.labelLarge,
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: AppTheme.primaryBlue,
+                        size: 16,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _useRdFd
-                            ? 'RD/FD details will be considered'
-                            : 'Enable to compare with investment strategy',
-                        style: AppTheme.bodySmall.copyWith(
-                          color: AppTheme.neutral600,
+                      const SizedBox(width: AppTheme.space8),
+                      Expanded(
+                        child: Text(
+                          'Once RD tenure is over, principal and accrued interest (after tax) will be added to FD account',
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.primaryBlueDark,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                Switch(
-                  value: _useRdFd,
-                  onChanged: (value) {
-                    setState(() {
-                      _useRdFd = value;
-                    });
-                  },
-                  activeColor: AppTheme.accentGreen,
                 ),
               ],
             ),
           ),
 
-          if (_useRdFd) ...[
-            const SizedBox(height: AppTheme.space24),
+          const SizedBox(height: AppTheme.space16),
 
-            // RD Details
-            Container(
-              padding: const EdgeInsets.all(AppTheme.space20),
-              decoration: BoxDecoration(
-                color: AppTheme.backgroundSecondary,
-                borderRadius: AppTheme.borderRadiusLarge,
-                border: Border.all(color: AppTheme.neutral200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          // FD Details
+          Container(
+            padding: const EdgeInsets.all(AppTheme.space20),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundSecondary,
+              borderRadius: AppTheme.borderRadiusLarge,
+              border: Border.all(color: AppTheme.neutral200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentOrange,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.trending_up_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.space8),
+                    Text(
+                      'Fixed Deposit (FD)',
+                      style: AppTheme.heading4.copyWith(fontSize: 16),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTheme.space16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Months', style: AppTheme.labelMedium),
+                          const SizedBox(height: AppTheme.space8),
+                          TextField(
+                            decoration: const InputDecoration(
+                              hintText: '60',
+                              suffixText: 'months',
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.space16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Interest Rate', style: AppTheme.labelMedium),
+                          const SizedBox(height: AppTheme.space8),
+                          TextField(
+                            decoration: const InputDecoration(
+                              hintText: '7.0',
+                              suffixText: '% p.a.',
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,2}'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTheme.space12),
+                // FD Note
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.space12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentOrangeLight,
+                    borderRadius: AppTheme.borderRadiusMedium,
+                    border: Border.all(
+                      color: AppTheme.accentOrange.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryBlue,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Icon(
-                          Icons.calendar_today_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: AppTheme.accentOrange,
+                        size: 16,
                       ),
                       const SizedBox(width: AppTheme.space8),
-                      Text(
-                        'Recurring Deposit (RD)',
-                        style: AppTheme.heading4.copyWith(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppTheme.space16),
-                  Row(
-                    children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Months', style: AppTheme.labelMedium),
-                            const SizedBox(height: AppTheme.space8),
-                            TextField(
-                              decoration: const InputDecoration(
-                                hintText: '12',
-                                suffixText: 'months',
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                              ),
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.space16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Interest Rate', style: AppTheme.labelMedium),
-                            const SizedBox(height: AppTheme.space8),
-                            TextField(
-                              decoration: const InputDecoration(
-                                hintText: '6.5',
-                                suffixText: '% p.a.',
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                              ),
-                              keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true,
-                              ),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'^\d+\.?\d{0,2}'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppTheme.space12),
-                  // RD Note
-                  Container(
-                    padding: const EdgeInsets.all(AppTheme.space12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryBlueSubtle,
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      border: Border.all(
-                        color: AppTheme.primaryBlue.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          color: AppTheme.primaryBlue,
-                          size: 16,
-                        ),
-                        const SizedBox(width: AppTheme.space8),
-                        Expanded(
-                          child: Text(
-                            'Once RD tenure is over, principal and accrued interest (after tax) will be added to FD account',
-                            style: AppTheme.bodySmall.copyWith(
-                              color: AppTheme.primaryBlueDark,
-                              fontSize: 12,
-                            ),
+                        child: Text(
+                          'After tenure is over, principal and accrued interest (after tax) will be reinvested in FD again',
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.neutral800,
+                            fontSize: 12,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppTheme.space16),
-
-            // FD Details
-            Container(
-              padding: const EdgeInsets.all(AppTheme.space20),
-              decoration: BoxDecoration(
-                color: AppTheme.backgroundSecondary,
-                borderRadius: AppTheme.borderRadiusLarge,
-                border: Border.all(color: AppTheme.neutral200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentOrange,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Icon(
-                          Icons.trending_up_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.space8),
-                      Text(
-                        'Fixed Deposit (FD)',
-                        style: AppTheme.heading4.copyWith(fontSize: 16),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppTheme.space16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Months', style: AppTheme.labelMedium),
-                            const SizedBox(height: AppTheme.space8),
-                            TextField(
-                              decoration: const InputDecoration(
-                                hintText: '60',
-                                suffixText: 'months',
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                              ),
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.space16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Interest Rate', style: AppTheme.labelMedium),
-                            const SizedBox(height: AppTheme.space8),
-                            TextField(
-                              decoration: const InputDecoration(
-                                hintText: '7.0',
-                                suffixText: '% p.a.',
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                              ),
-                              keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true,
-                              ),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'^\d+\.?\d{0,2}'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppTheme.space12),
-                  // FD Note
-                  Container(
-                    padding: const EdgeInsets.all(AppTheme.space12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentOrangeLight,
-                      borderRadius: AppTheme.borderRadiusMedium,
-                      border: Border.all(
-                        color: AppTheme.accentOrange.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          color: AppTheme.accentOrange,
-                          size: 16,
-                        ),
-                        const SizedBox(width: AppTheme.space8),
-                        Expanded(
-                          child: Text(
-                            'After tenure is over, principal and accrued interest (after tax) will be reinvested in FD again',
-                            style: AppTheme.bodySmall.copyWith(
-                              color: AppTheme.neutral800,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );

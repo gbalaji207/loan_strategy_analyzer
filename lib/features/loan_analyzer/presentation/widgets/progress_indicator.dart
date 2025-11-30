@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class StepProgressIndicator extends StatelessWidget {
-  final int currentStep; // 1, 2, 3, or 4
+  final int currentStep; // 1, 2, or 3
 
   const StepProgressIndicator({super.key, required this.currentStep});
 
@@ -40,18 +40,9 @@ class StepProgressIndicator extends StatelessWidget {
               _StepConnector(isActive: currentStep > 2),
               Expanded(
                 child: _StepIndicator(
-                  label: 'Strategies',
+                  label: 'Results',
                   number: 3,
                   isActive: currentStep >= 3,
-                  isComplete: currentStep > 3,
-                ),
-              ),
-              _StepConnector(isActive: currentStep > 3),
-              Expanded(
-                child: _StepIndicator(
-                  label: 'Results',
-                  number: 4,
-                  isActive: currentStep >= 4,
                   isComplete: false,
                 ),
               ),

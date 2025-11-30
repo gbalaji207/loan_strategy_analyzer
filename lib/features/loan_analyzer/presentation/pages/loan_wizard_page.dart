@@ -3,7 +3,6 @@ import '../../../../shared/widgets/page_header.dart';
 import '../widgets/progress_indicator.dart';
 import '../widgets/wizard_steps/inputs_step.dart';
 import '../widgets/wizard_steps/payment_plan_step.dart';
-import '../widgets/wizard_steps/strategy_selection_step.dart';
 import '../widgets/wizard_steps/results_step.dart';
 
 class LoanWizardPage extends StatefulWidget {
@@ -88,11 +87,6 @@ class _LoanWizardPageState extends State<LoanWizardPage> {
                   currentStep: _currentStep,
                 ),
                 PaymentPlanStep(
-                  onNext: _goToNextPage,
-                  onBack: _goToPreviousPage,
-                  currentStep: _currentStep,
-                ),
-                StrategySelectionStep(
                   onNext: _goToNextPage,
                   onBack: _goToPreviousPage,
                   currentStep: _currentStep,
