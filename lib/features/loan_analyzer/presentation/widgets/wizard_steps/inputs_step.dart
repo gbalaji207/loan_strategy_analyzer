@@ -346,9 +346,7 @@ class _InputsStepState extends State<InputsStep> {
                 isEnabled: strategy.isEnabled,
                 isComingSoon: strategy.isComingSoon,
                 onChanged: (selected) {
-                  if (!strategy.isRequired) {
-                    context.read<LoanInputCubit>().toggleStrategy(strategy.id);
-                  }
+                  context.read<LoanInputCubit>().toggleStrategy(strategy.id);
                 },
               ),
             );

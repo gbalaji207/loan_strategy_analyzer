@@ -8,9 +8,8 @@ class StrategySelection extends Equatable {
     required this.selectedStrategyIds,
   });
 
-  /// Default constructor with Strategy 1 (prepay_principal) selected
-  const StrategySelection.initial()
-      : selectedStrategyIds = const {'prepay_principal'};
+  /// Default constructor with no strategies selected
+  const StrategySelection.initial() : selectedStrategyIds = const {};
 
   /// Empty constructor
   const StrategySelection.empty() : selectedStrategyIds = const {};

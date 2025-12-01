@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../shared/widgets/navigation_buttons.dart';
 import '../../../../../shared/widgets/sticky_navigation_footer.dart';
+import '../../cubit/payment_plan_cubit.dart';
+import '../../cubit/payment_plan_state.dart';
 import '../section.dart';
 
 class PaymentPlanStep extends StatefulWidget {
@@ -22,55 +25,124 @@ class PaymentPlanStep extends StatefulWidget {
 }
 
 class _PaymentPlanStepState extends State<PaymentPlanStep> {
+  // Text editing controllers
+  final _additionalMonthlyController = TextEditingController();
+  final _monthlyStepUpController = TextEditingController();
+  final _additionalYearlyController = TextEditingController();
+  final _yearlyStepUpController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize controllers with existing state values
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeControllers();
+    });
+  }
+
+  void _initializeControllers() {
+    final state = context.read<PaymentPlanCubit>().state;
+
+    if (state.config.additionalMonthlyAmount > 0) {
+      _additionalMonthlyController.text = state.config.additionalMonthlyAmount
+          .toStringAsFixed(0);
+    }
+    if (state.config.monthlyStepUpPercentage > 0) {
+      _monthlyStepUpController.text = state.config.monthlyStepUpPercentage
+          .toString();
+    }
+    if (state.config.additionalYearlyAmount > 0) {
+      _additionalYearlyController.text = state.config.additionalYearlyAmount
+          .toStringAsFixed(0);
+    }
+    if (state.config.yearlyStepUpPercentage > 0) {
+      _yearlyStepUpController.text = state.config.yearlyStepUpPercentage
+          .toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _additionalMonthlyController.dispose();
+    _monthlyStepUpController.dispose();
+    _additionalYearlyController.dispose();
+    _yearlyStepUpController.dispose();
+    super.dispose();
+  }
+
   bool _enableMonthlyStepUp = false;
   bool _enableYearlyStepUp = false;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppTheme.space24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '💰 Configure Your Payment Plan',
-                      style: AppTheme.heading2,
+    return BlocBuilder<PaymentPlanCubit, PaymentPlanState>(
+      builder: (context, state) {
+        // Sync local toggles with state
+        _enableMonthlyStepUp = state.config.enableMonthlyStepUp;
+        _enableYearlyStepUp = state.config.enableYearlyStepUp;
+
+        return Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppTheme.space24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '💰 Configure Your Payment Plan',
+                          style: AppTheme.heading2,
+                        ),
+                        const SizedBox(height: AppTheme.space8),
+                        Text(
+                          'Tell us how much extra you can contribute beyond your EMI',
+                          style: AppTheme.bodyLarge.copyWith(
+                            color: AppTheme.neutral600,
+                          ),
+                        ),
+                        const SizedBox(height: AppTheme.space32),
+                        _buildPaymentInputs(context, state),
+                        const SizedBox(height: AppTheme.space24),
+                      ],
                     ),
-                    const SizedBox(height: AppTheme.space8),
-                    Text(
-                      'Tell us how much extra you can contribute beyond your EMI',
-                      style: AppTheme.bodyLarge.copyWith(
-                        color: AppTheme.neutral600,
-                      ),
-                    ),
-                    const SizedBox(height: AppTheme.space32),
-                    _buildPaymentInputs(),
-                    const SizedBox(height: AppTheme.space24),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        StickyNavigationFooter(
-          child: NavigationButtons(
-            showBack: true,
-            onBackPressed: widget.onBack,
-            showContinue: true,
-            onContinuePressed: widget.onNext,
-          ),
-        ),
-      ],
+            StickyNavigationFooter(
+              child: NavigationButtons(
+                showBack: true,
+                onBackPressed: widget.onBack,
+                showContinue: true,
+                onContinuePressed: () => _handleContinue(context),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildPaymentInputs() {
+  void _handleContinue(BuildContext context) {
+    final cubit = context.read<PaymentPlanCubit>();
+    if (cubit.validateForm()) {
+      widget.onNext();
+    } else {
+      if (cubit.state.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(cubit.state.errorMessage!),
+            backgroundColor: AppTheme.accentRed,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildPaymentInputs(BuildContext context, PaymentPlanState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -84,6 +156,7 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
               Text('Additional Monthly Amount', style: AppTheme.labelLarge),
               const SizedBox(height: AppTheme.space8),
               TextField(
+                controller: _additionalMonthlyController,
                 decoration: InputDecoration(
                   hintText: '1,000',
                   helperText: 'Amount beyond your regular EMI',
@@ -102,6 +175,13 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (value) {
+                  final amount =
+                      double.tryParse(value.replaceAll(',', '')) ?? 0;
+                  context
+                      .read<PaymentPlanCubit>()
+                      .updateAdditionalMonthlyAmount(amount);
+                },
               ),
               const SizedBox(height: AppTheme.space20),
 
@@ -145,6 +225,9 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
                         setState(() {
                           _enableMonthlyStepUp = value;
                         });
+                        context.read<PaymentPlanCubit>().toggleMonthlyStepUp(
+                          value,
+                        );
                       },
                       activeColor: AppTheme.primaryBlue,
                     ),
@@ -157,6 +240,7 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
                 Text('Annual Increase Percentage', style: AppTheme.labelLarge),
                 const SizedBox(height: AppTheme.space8),
                 TextField(
+                  controller: _monthlyStepUpController,
                   decoration: const InputDecoration(
                     hintText: '10',
                     helperText: 'Percentage increase each year',
@@ -174,8 +258,48 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
                       RegExp(r'^\d+\.?\d{0,2}'),
                     ),
                   ],
+                  onChanged: (value) {
+                    final percentage = double.tryParse(value) ?? 0;
+                    context
+                        .read<PaymentPlanCubit>()
+                        .updateMonthlyStepUpPercentage(percentage);
+                  },
                 ),
               ],
+
+              const SizedBox(height: AppTheme.space16),
+
+              // Info card
+              Container(
+                padding: const EdgeInsets.all(AppTheme.space12),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGreenLight,
+                  borderRadius: AppTheme.borderRadiusMedium,
+                  border: Border.all(
+                    color: AppTheme.accentGreen.withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline_rounded,
+                      color: AppTheme.accentGreen,
+                      size: 16,
+                    ),
+                    const SizedBox(width: AppTheme.space8),
+                    Expanded(
+                      child: Text(
+                        'Tip: Even ₹1,000 extra per month can save lakhs in interest and reduce your loan tenure significantly!',
+                        style: AppTheme.bodySmall.copyWith(
+                          color: AppTheme.neutral800,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -193,6 +317,7 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
               Text('Additional Yearly Amount', style: AppTheme.labelLarge),
               const SizedBox(height: AppTheme.space8),
               TextField(
+                controller: _additionalYearlyController,
                 decoration: InputDecoration(
                   hintText: '50,000',
                   helperText: 'One-time yearly payment (optional)',
@@ -211,6 +336,13 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (value) {
+                  final amount =
+                      double.tryParse(value.replaceAll(',', '')) ?? 0;
+                  context.read<PaymentPlanCubit>().updateAdditionalYearlyAmount(
+                    amount,
+                  );
+                },
               ),
               const SizedBox(height: AppTheme.space20),
 
@@ -254,6 +386,9 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
                         setState(() {
                           _enableYearlyStepUp = value;
                         });
+                        context.read<PaymentPlanCubit>().toggleYearlyStepUp(
+                          value,
+                        );
                       },
                       activeColor: AppTheme.primaryBlue,
                     ),
@@ -266,6 +401,7 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
                 Text('Annual Increase Percentage', style: AppTheme.labelLarge),
                 const SizedBox(height: AppTheme.space8),
                 TextField(
+                  controller: _yearlyStepUpController,
                   decoration: const InputDecoration(
                     hintText: '5',
                     helperText: 'Percentage increase each year',
@@ -283,6 +419,12 @@ class _PaymentPlanStepState extends State<PaymentPlanStep> {
                       RegExp(r'^\d+\.?\d{0,2}'),
                     ),
                   ],
+                  onChanged: (value) {
+                    final percentage = double.tryParse(value) ?? 0;
+                    context
+                        .read<PaymentPlanCubit>()
+                        .updateYearlyStepUpPercentage(percentage);
+                  },
                 ),
               ],
 

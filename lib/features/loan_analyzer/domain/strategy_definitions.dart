@@ -46,7 +46,6 @@ class StrategyDefinitions {
       description:
       'Use extra payments to reduce principal, shortening your loan tenure while keeping EMI constant.',
       icon: Icons.trending_down,
-      isRequired: true,
       isEnabled: true,
     ),
     StrategyDefinition(
