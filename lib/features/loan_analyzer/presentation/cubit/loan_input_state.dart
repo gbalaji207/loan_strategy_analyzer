@@ -65,6 +65,29 @@ class LoanInputState extends Equatable {
   /// Calculate EMI based on current loan config
   double get emi => loanConfig.calculateEmi();
 
+  /// Convert state to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'loanConfig': loanConfig.toJson(),
+      'strategySelection': strategySelection.toJson(),
+      'rdFdConfig': rdFdConfig.toJson(),
+      'taxConfig': taxConfig.toJson(),
+    };
+  }
+
+  /// Create state from JSON
+  factory LoanInputState.fromJson(Map<String, dynamic> json) {
+    return LoanInputState(
+      status: LoanInputStatus.editing,
+      loanConfig: LoanConfig.fromJson(json['loanConfig'] as Map<String, dynamic>),
+      strategySelection: StrategySelection.fromJson(
+        json['strategySelection'] as Map<String, dynamic>,
+      ),
+      rdFdConfig: RdFdConfig.fromJson(json['rdFdConfig'] as Map<String, dynamic>),
+      taxConfig: TaxConfig.fromJson(json['taxConfig'] as Map<String, dynamic>),
+    );
+  }
+
   LoanInputState copyWith({
     LoanInputStatus? status,
     LoanConfig? loanConfig,

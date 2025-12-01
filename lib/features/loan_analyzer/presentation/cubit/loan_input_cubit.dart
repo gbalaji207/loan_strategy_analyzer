@@ -7,6 +7,15 @@ class LoanInputCubit extends Cubit<LoanInputState> {
   LoanInputCubit() : super(LoanInputState.initial());
 
   // ============================================================================
+  // LOAD FROM IMPORT (called by wizard page)
+  // ============================================================================
+
+  /// Load state from imported data (called during import)
+  void loadFromImport(LoanInputState importedState) {
+    emit(importedState);
+  }
+
+  // ============================================================================
   // LOAN CONFIGURATION
   // ============================================================================
 
@@ -29,10 +38,9 @@ class LoanInputCubit extends Cubit<LoanInputState> {
   }
 
   void _updateLoanConfig(LoanConfig newConfig) {
-    emit(state.copyWith(
-      loanConfig: newConfig,
-      status: LoanInputStatus.editing,
-    ));
+    emit(
+      state.copyWith(loanConfig: newConfig, status: LoanInputStatus.editing),
+    );
     _validateAndUpdateStatus();
   }
 
@@ -43,23 +51,25 @@ class LoanInputCubit extends Cubit<LoanInputState> {
   /// Toggle strategy selection
   void toggleStrategy(String strategyId) {
     final newSelection = state.strategySelection.toggleStrategy(strategyId);
-    emit(state.copyWith(
-      strategySelection: newSelection,
-      status: LoanInputStatus.editing,
-    ));
+    emit(
+      state.copyWith(
+        strategySelection: newSelection,
+        status: LoanInputStatus.editing,
+      ),
+    );
 
     // If RD/FD strategy is selected, automatically enable RD/FD config
     if (newSelection.requiresRdFd && !state.rdFdConfig.isEnabled) {
-      emit(state.copyWith(
-        rdFdConfig: state.rdFdConfig.copyWith(isEnabled: true),
-      ));
+      emit(
+        state.copyWith(rdFdConfig: state.rdFdConfig.copyWith(isEnabled: true)),
+      );
     }
 
     // If RD/FD strategy is deselected, disable RD/FD config
     if (!newSelection.requiresRdFd && state.rdFdConfig.isEnabled) {
-      emit(state.copyWith(
-        rdFdConfig: state.rdFdConfig.copyWith(isEnabled: false),
-      ));
+      emit(
+        state.copyWith(rdFdConfig: state.rdFdConfig.copyWith(isEnabled: false)),
+      );
     }
 
     _validateAndUpdateStatus();
@@ -68,20 +78,24 @@ class LoanInputCubit extends Cubit<LoanInputState> {
   /// Select a strategy
   void selectStrategy(String strategyId) {
     final newSelection = state.strategySelection.addStrategy(strategyId);
-    emit(state.copyWith(
-      strategySelection: newSelection,
-      status: LoanInputStatus.editing,
-    ));
+    emit(
+      state.copyWith(
+        strategySelection: newSelection,
+        status: LoanInputStatus.editing,
+      ),
+    );
     _validateAndUpdateStatus();
   }
 
   /// Deselect a strategy
   void deselectStrategy(String strategyId) {
     final newSelection = state.strategySelection.removeStrategy(strategyId);
-    emit(state.copyWith(
-      strategySelection: newSelection,
-      status: LoanInputStatus.editing,
-    ));
+    emit(
+      state.copyWith(
+        strategySelection: newSelection,
+        status: LoanInputStatus.editing,
+      ),
+    );
     _validateAndUpdateStatus();
   }
 
@@ -91,50 +105,60 @@ class LoanInputCubit extends Cubit<LoanInputState> {
 
   /// Toggle RD/FD enabled state
   void toggleRdFdEnabled(bool enabled) {
-    emit(state.copyWith(
-      rdFdConfig: state.rdFdConfig.copyWith(isEnabled: enabled),
-      status: LoanInputStatus.editing,
-    ));
+    emit(
+      state.copyWith(
+        rdFdConfig: state.rdFdConfig.copyWith(isEnabled: enabled),
+        status: LoanInputStatus.editing,
+      ),
+    );
     _validateAndUpdateStatus();
   }
 
   /// Update RD months
   void updateRdMonths(int months) {
     final newRdConfig = state.rdFdConfig.rdConfig.copyWith(months: months);
-    emit(state.copyWith(
-      rdFdConfig: state.rdFdConfig.copyWith(rdConfig: newRdConfig),
-      status: LoanInputStatus.editing,
-    ));
+    emit(
+      state.copyWith(
+        rdFdConfig: state.rdFdConfig.copyWith(rdConfig: newRdConfig),
+        status: LoanInputStatus.editing,
+      ),
+    );
     _validateAndUpdateStatus();
   }
 
   /// Update RD interest rate
   void updateRdInterestRate(double rate) {
     final newRdConfig = state.rdFdConfig.rdConfig.copyWith(interestRate: rate);
-    emit(state.copyWith(
-      rdFdConfig: state.rdFdConfig.copyWith(rdConfig: newRdConfig),
-      status: LoanInputStatus.editing,
-    ));
+    emit(
+      state.copyWith(
+        rdFdConfig: state.rdFdConfig.copyWith(rdConfig: newRdConfig),
+        status: LoanInputStatus.editing,
+      ),
+    );
     _validateAndUpdateStatus();
   }
 
   /// Update FD months
   void updateFdMonths(int months) {
     final newFdConfig = state.rdFdConfig.fdConfig.copyWith(months: months);
-    emit(state.copyWith(
-      rdFdConfig: state.rdFdConfig.copyWith(fdConfig: newFdConfig),
-      status: LoanInputStatus.editing,
-    ));
+    emit(
+      state.copyWith(
+        rdFdConfig: state.rdFdConfig.copyWith(fdConfig: newFdConfig),
+        status: LoanInputStatus.editing,
+      ),
+    );
     _validateAndUpdateStatus();
   }
 
   /// Update FD interest rate
   void updateFdInterestRate(double rate) {
     final newFdConfig = state.rdFdConfig.fdConfig.copyWith(interestRate: rate);
-    emit(state.copyWith(
-      rdFdConfig: state.rdFdConfig.copyWith(fdConfig: newFdConfig),
-      status: LoanInputStatus.editing,
-    ));
+    emit(
+      state.copyWith(
+        rdFdConfig: state.rdFdConfig.copyWith(fdConfig: newFdConfig),
+        status: LoanInputStatus.editing,
+      ),
+    );
     _validateAndUpdateStatus();
   }
 
@@ -145,32 +169,21 @@ class LoanInputCubit extends Cubit<LoanInputState> {
   /// Update tax slab percentage
   void updateTaxSlab(int percentage) {
     final newConfig = state.taxConfig.copyWith(taxSlabPercentage: percentage);
-    emit(state.copyWith(
-      taxConfig: newConfig,
-      status: LoanInputStatus.editing,
-    ));
+    emit(state.copyWith(taxConfig: newConfig, status: LoanInputStatus.editing));
     _validateAndUpdateStatus();
   }
 
   /// Update Section 80C eligibility
   void updateSection80c(double amount) {
-    final newConfig =
-    state.taxConfig.copyWith(section80cEligibility: amount);
-    emit(state.copyWith(
-      taxConfig: newConfig,
-      status: LoanInputStatus.editing,
-    ));
+    final newConfig = state.taxConfig.copyWith(section80cEligibility: amount);
+    emit(state.copyWith(taxConfig: newConfig, status: LoanInputStatus.editing));
     _validateAndUpdateStatus();
   }
 
   /// Update Section 24(B) eligibility
   void updateSection24b(double amount) {
-    final newConfig =
-    state.taxConfig.copyWith(section24bEligibility: amount);
-    emit(state.copyWith(
-      taxConfig: newConfig,
-      status: LoanInputStatus.editing,
-    ));
+    final newConfig = state.taxConfig.copyWith(section24bEligibility: amount);
+    emit(state.copyWith(taxConfig: newConfig, status: LoanInputStatus.editing));
     _validateAndUpdateStatus();
   }
 
@@ -181,15 +194,14 @@ class LoanInputCubit extends Cubit<LoanInputState> {
   /// Validate all inputs and update status
   void _validateAndUpdateStatus() {
     if (state.isValid) {
-      emit(state.copyWith(
-        status: LoanInputStatus.valid,
-        errorMessage: null,
-      ));
+      emit(state.copyWith(status: LoanInputStatus.valid, errorMessage: null));
     } else {
-      emit(state.copyWith(
-        status: LoanInputStatus.invalid,
-        errorMessage: _getValidationError(),
-      ));
+      emit(
+        state.copyWith(
+          status: LoanInputStatus.invalid,
+          errorMessage: _getValidationError(),
+        ),
+      );
     }
   }
 

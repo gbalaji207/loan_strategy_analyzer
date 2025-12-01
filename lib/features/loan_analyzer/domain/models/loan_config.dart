@@ -25,11 +25,29 @@ class LoanConfig extends Equatable {
     final monthlyRate = interestRate / (12 * 100);
     final emi =
         loanAmount *
-        monthlyRate *
-        pow(1 + monthlyRate, tenureMonths) /
-        (pow(1 + monthlyRate, tenureMonths) - 1);
+            monthlyRate *
+            pow(1 + monthlyRate, tenureMonths) /
+            (pow(1 + monthlyRate, tenureMonths) - 1);
 
     return emi;
+  }
+
+  /// Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'loanAmount': loanAmount,
+      'tenureMonths': tenureMonths,
+      'interestRate': interestRate,
+    };
+  }
+
+  /// Create from JSON
+  factory LoanConfig.fromJson(Map<String, dynamic> json) {
+    return LoanConfig(
+      loanAmount: (json['loanAmount'] as num).toDouble(),
+      tenureMonths: json['tenureMonths'] as int,
+      interestRate: (json['interestRate'] as num).toDouble(),
+    );
   }
 
   /// Copy with method

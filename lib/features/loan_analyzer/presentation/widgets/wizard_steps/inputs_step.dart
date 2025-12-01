@@ -25,63 +25,78 @@ class InputsStep extends StatefulWidget {
 }
 
 class _InputsStepState extends State<InputsStep> {
-  // Text editing controllers
-  final _loanAmountController = TextEditingController();
-  final _tenureController = TextEditingController();
-  final _interestRateController = TextEditingController();
-  final _rdMonthsController = TextEditingController();
-  final _rdRateController = TextEditingController();
-  final _fdMonthsController = TextEditingController();
-  final _fdRateController = TextEditingController();
-  final _section80cController = TextEditingController();
-  final _section24bController = TextEditingController();
+  late TextEditingController _loanAmountController;
+  late TextEditingController _tenureController;
+  late TextEditingController _interestRateController;
+  late TextEditingController _rdMonthsController;
+  late TextEditingController _rdRateController;
+  late TextEditingController _fdMonthsController;
+  late TextEditingController _fdRateController;
+  late TextEditingController _section80cController;
+  late TextEditingController _section24bController;
 
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with existing state values
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeControllers();
-    });
+    _initializeControllers();
   }
 
   void _initializeControllers() {
     final state = context.read<LoanInputCubit>().state;
 
-    // Loan config
-    if (state.loanConfig.loanAmount > 0) {
-      _loanAmountController.text = state.loanConfig.loanAmount.toStringAsFixed(0);
-    }
-    if (state.loanConfig.tenureMonths > 0) {
-      _tenureController.text = state.loanConfig.tenureMonths.toString();
-    }
-    if (state.loanConfig.interestRate > 0) {
-      _interestRateController.text = state.loanConfig.interestRate.toString();
-    }
+    _loanAmountController = TextEditingController(
+      text: state.loanConfig.loanAmount > 0
+          ? state.loanConfig.loanAmount.toStringAsFixed(0)
+          : '',
+    );
 
-    // RD config
-    if (state.rdFdConfig.rdConfig.months > 0) {
-      _rdMonthsController.text = state.rdFdConfig.rdConfig.months.toString();
-    }
-    if (state.rdFdConfig.rdConfig.interestRate > 0) {
-      _rdRateController.text = state.rdFdConfig.rdConfig.interestRate.toString();
-    }
+    _tenureController = TextEditingController(
+      text: state.loanConfig.tenureMonths > 0
+          ? state.loanConfig.tenureMonths.toString()
+          : '',
+    );
 
-    // FD config
-    if (state.rdFdConfig.fdConfig.months > 0) {
-      _fdMonthsController.text = state.rdFdConfig.fdConfig.months.toString();
-    }
-    if (state.rdFdConfig.fdConfig.interestRate > 0) {
-      _fdRateController.text = state.rdFdConfig.fdConfig.interestRate.toString();
-    }
+    _interestRateController = TextEditingController(
+      text: state.loanConfig.interestRate > 0
+          ? state.loanConfig.interestRate.toString()
+          : '',
+    );
 
-    // Tax config
-    if (state.taxConfig.section80cEligibility > 0) {
-      _section80cController.text = state.taxConfig.section80cEligibility.toStringAsFixed(0);
-    }
-    if (state.taxConfig.section24bEligibility > 0) {
-      _section24bController.text = state.taxConfig.section24bEligibility.toStringAsFixed(0);
-    }
+    _rdMonthsController = TextEditingController(
+      text: state.rdFdConfig.rdConfig.months > 0
+          ? state.rdFdConfig.rdConfig.months.toString()
+          : '',
+    );
+
+    _rdRateController = TextEditingController(
+      text: state.rdFdConfig.rdConfig.interestRate > 0
+          ? state.rdFdConfig.rdConfig.interestRate.toString()
+          : '',
+    );
+
+    _fdMonthsController = TextEditingController(
+      text: state.rdFdConfig.fdConfig.months > 0
+          ? state.rdFdConfig.fdConfig.months.toString()
+          : '',
+    );
+
+    _fdRateController = TextEditingController(
+      text: state.rdFdConfig.fdConfig.interestRate > 0
+          ? state.rdFdConfig.fdConfig.interestRate.toString()
+          : '',
+    );
+
+    _section80cController = TextEditingController(
+      text: state.taxConfig.section80cEligibility > 0
+          ? state.taxConfig.section80cEligibility.toStringAsFixed(0)
+          : '',
+    );
+
+    _section24bController = TextEditingController(
+      text: state.taxConfig.section24bEligibility > 0
+          ? state.taxConfig.section24bEligibility.toStringAsFixed(0)
+          : '',
+    );
   }
 
   @override
@@ -101,6 +116,10 @@ class _InputsStepState extends State<InputsStep> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LoanInputCubit, LoanInputState>(
+      buildWhen: (previous, current) {
+        // Rebuild when strategies change (affects RD/FD section visibility)
+        return previous.strategySelection != current.strategySelection;
+      },
       builder: (context, state) {
         return Column(
           children: [
@@ -205,8 +224,7 @@ class _InputsStepState extends State<InputsStep> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (value) {
-                  final amount =
-                      double.tryParse(value.replaceAll(',', '')) ?? 0;
+                  final amount = double.tryParse(value.replaceAll(',', '')) ?? 0;
                   context.read<LoanInputCubit>().updateLoanAmount(amount);
                 },
               ),
@@ -284,43 +302,48 @@ class _InputsStepState extends State<InputsStep> {
           const SizedBox(height: AppTheme.space20),
 
           // Info card with calculated EMI
-          Container(
-            padding: const EdgeInsets.all(AppTheme.space16),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryBlueSubtle,
-              borderRadius: AppTheme.borderRadiusMedium,
-              border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  color: AppTheme.primaryBlue,
-                  size: 20,
+          BlocBuilder<LoanInputCubit, LoanInputState>(
+            buildWhen: (previous, current) => previous.emi != current.emi,
+            builder: (context, state) {
+              return Container(
+                padding: const EdgeInsets.all(AppTheme.space16),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlueSubtle,
+                  borderRadius: AppTheme.borderRadiusMedium,
+                  border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
                 ),
-                const SizedBox(width: AppTheme.space12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Monthly EMI: ₹${state.emi > 0 ? state.emi.toStringAsFixed(2) : '0.00'}',
-                        style: AppTheme.labelLarge.copyWith(
-                          color: AppTheme.primaryBlueDark,
-                        ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: AppTheme.primaryBlue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: AppTheme.space12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Monthly EMI: ₹${state.emi > 0 ? state.emi.toStringAsFixed(2) : '0.00'}',
+                            style: AppTheme.labelLarge.copyWith(
+                              color: AppTheme.primaryBlueDark,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'These values will be used to calculate EMI and compare different repayment strategies',
+                            style: AppTheme.bodySmall.copyWith(
+                              color: AppTheme.primaryBlueDark,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'These values will be used to calculate EMI and compare different repayment strategies',
-                        style: AppTheme.bodySmall.copyWith(
-                          color: AppTheme.primaryBlueDark,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),
@@ -346,7 +369,9 @@ class _InputsStepState extends State<InputsStep> {
                 isEnabled: strategy.isEnabled,
                 isComingSoon: strategy.isComingSoon,
                 onChanged: (selected) {
-                  context.read<LoanInputCubit>().toggleStrategy(strategy.id);
+                  if (!strategy.isRequired) {
+                    context.read<LoanInputCubit>().toggleStrategy(strategy.id);
+                  }
                 },
               ),
             );

@@ -8,8 +8,9 @@ class StrategySelection extends Equatable {
     required this.selectedStrategyIds,
   });
 
-  /// Default constructor with no strategies selected
-  const StrategySelection.initial() : selectedStrategyIds = const {};
+  /// Default constructor with Strategy 1 (prepay_principal) selected
+  const StrategySelection.initial()
+      : selectedStrategyIds = const {'prepay_principal'};
 
   /// Empty constructor
   const StrategySelection.empty() : selectedStrategyIds = const {};
@@ -61,6 +62,21 @@ class StrategySelection extends Equatable {
   /// Clear all selections
   StrategySelection clear() {
     return const StrategySelection.empty();
+  }
+
+  /// Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'selectedStrategyIds': selectedStrategyIds.toList(),
+    };
+  }
+
+  /// Create from JSON
+  factory StrategySelection.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> ids = json['selectedStrategyIds'] as List<dynamic>;
+    return StrategySelection(
+      selectedStrategyIds: ids.map((e) => e.toString()).toSet(),
+    );
   }
 
   StrategySelection copyWith({

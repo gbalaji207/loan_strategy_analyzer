@@ -44,6 +44,22 @@ class TaxConfig extends Equatable {
     return calculateTaxSavings(eligibleAmount);
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'taxSlabPercentage': taxSlabPercentage,
+      'section80cEligibility': section80cEligibility,
+      'section24bEligibility': section24bEligibility,
+    };
+  }
+
+  factory TaxConfig.fromJson(Map<String, dynamic> json) {
+    return TaxConfig(
+      taxSlabPercentage: json['taxSlabPercentage'] as int,
+      section80cEligibility: (json['section80cEligibility'] as num).toDouble(),
+      section24bEligibility: (json['section24bEligibility'] as num).toDouble(),
+    );
+  }
+
   TaxConfig copyWith({
     int? taxSlabPercentage,
     double? section80cEligibility,

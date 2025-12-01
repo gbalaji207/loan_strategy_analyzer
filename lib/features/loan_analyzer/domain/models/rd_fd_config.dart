@@ -16,6 +16,20 @@ class RdConfig extends Equatable {
 
   bool get isValid => months > 0 && interestRate > 0;
 
+  Map<String, dynamic> toJson() {
+    return {
+      'months': months,
+      'interestRate': interestRate,
+    };
+  }
+
+  factory RdConfig.fromJson(Map<String, dynamic> json) {
+    return RdConfig(
+      months: json['months'] as int,
+      interestRate: (json['interestRate'] as num).toDouble(),
+    );
+  }
+
   RdConfig copyWith({
     int? months,
     double? interestRate,
@@ -45,6 +59,20 @@ class FdConfig extends Equatable {
         interestRate = 0;
 
   bool get isValid => months > 0 && interestRate > 0;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'months': months,
+      'interestRate': interestRate,
+    };
+  }
+
+  factory FdConfig.fromJson(Map<String, dynamic> json) {
+    return FdConfig(
+      months: json['months'] as int,
+      interestRate: (json['interestRate'] as num).toDouble(),
+    );
+  }
 
   FdConfig copyWith({
     int? months,
@@ -83,6 +111,22 @@ class RdFdConfig extends Equatable {
 
     // If enabled, both RD and FD configs must be valid
     return rdConfig.isValid && fdConfig.isValid;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'isEnabled': isEnabled,
+      'rdConfig': rdConfig.toJson(),
+      'fdConfig': fdConfig.toJson(),
+    };
+  }
+
+  factory RdFdConfig.fromJson(Map<String, dynamic> json) {
+    return RdFdConfig(
+      isEnabled: json['isEnabled'] as bool,
+      rdConfig: RdConfig.fromJson(json['rdConfig'] as Map<String, dynamic>),
+      fdConfig: FdConfig.fromJson(json['fdConfig'] as Map<String, dynamic>),
+    );
   }
 
   RdFdConfig copyWith({

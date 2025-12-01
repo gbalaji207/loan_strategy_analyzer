@@ -7,6 +7,18 @@ class PaymentPlanCubit extends Cubit<PaymentPlanState> {
   PaymentPlanCubit() : super(PaymentPlanState.initial());
 
   // ============================================================================
+  // LOAD FROM CONFIG (for Import)
+  // ============================================================================
+
+  /// Load payment plan from PaymentPlanConfig (used during import)
+  void loadFromConfig(PaymentPlanConfig config) {
+    emit(PaymentPlanState(
+      status: PaymentPlanStatus.editing,
+      config: config,
+    ));
+  }
+
+  // ============================================================================
   // MONTHLY PAYMENT CONFIGURATION
   // ============================================================================
 

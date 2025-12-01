@@ -113,6 +113,38 @@ class PaymentPlanConfig extends Equatable {
     );
   }
 
+  // ============================================================================
+  // JSON SERIALIZATION
+  // ============================================================================
+
+  /// Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'additionalMonthlyAmount': additionalMonthlyAmount,
+      'enableMonthlyStepUp': enableMonthlyStepUp,
+      'monthlyStepUpPercentage': monthlyStepUpPercentage,
+      'additionalYearlyAmount': additionalYearlyAmount,
+      'enableYearlyStepUp': enableYearlyStepUp,
+      'yearlyStepUpPercentage': yearlyStepUpPercentage,
+    };
+  }
+
+  /// Create from JSON
+  factory PaymentPlanConfig.fromJson(Map<String, dynamic> json) {
+    return PaymentPlanConfig(
+      additionalMonthlyAmount:
+      (json['additionalMonthlyAmount'] as num?)?.toDouble() ?? 0,
+      enableMonthlyStepUp: json['enableMonthlyStepUp'] as bool? ?? false,
+      monthlyStepUpPercentage:
+      (json['monthlyStepUpPercentage'] as num?)?.toDouble() ?? 0,
+      additionalYearlyAmount:
+      (json['additionalYearlyAmount'] as num?)?.toDouble() ?? 0,
+      enableYearlyStepUp: json['enableYearlyStepUp'] as bool? ?? false,
+      yearlyStepUpPercentage:
+      (json['yearlyStepUpPercentage'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
   @override
   List<Object?> get props => [
     additionalMonthlyAmount,
