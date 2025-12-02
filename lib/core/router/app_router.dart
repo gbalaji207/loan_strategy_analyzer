@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/loan_analyzer/presentation/pages/loan_wizard_page.dart';
 import '../../features/loan_analyzer/presentation/pages/strategy_details_page.dart';
-import '../../features/loan_analyzer/presentation/pages/comparison_page.dart';
+import '../../features/loan_analyzer/presentation/pages/repayment_schedule_page.dart';
+import '../../features/loan_analyzer/data/services/loan_calculation_service.dart';
 import 'route_names.dart';
 
 final appRouter = GoRouter(
@@ -29,13 +30,33 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: '/results/comparison',
-      name: RouteNames.comparison,
-      pageBuilder: (context, state) => _buildPageWithSlideTransition(
-        context,
-        state,
-        const ComparisonPage(),
-      ),
+      path: '/results/schedule/:strategyId',
+      name: RouteNames.repaymentSchedule,
+      pageBuilder: (context, state) {
+        final strategyId = state.pathParameters['strategyId']!;
+        final extra = state.extra as Map<String, dynamic>?;
+
+        if (extra == null) {
+          return MaterialPage(
+            key: state.pageKey,
+            child: const Scaffold(
+              body: Center(
+                child: Text('Error: No schedule data available'),
+              ),
+            ),
+          );
+        }
+
+        return _buildPageWithSlideTransition(
+          context,
+          state,
+          RepaymentSchedulePage(
+            strategyId: strategyId,
+            schedule: extra['schedule'] as List<MonthlyPayment>,
+            strategyName: extra['strategyName'] as String,
+          ),
+        );
+      },
     ),
   ],
 );
@@ -50,7 +71,6 @@ Page<dynamic> _buildPageWithSlideTransition(
     key: state.pageKey,
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      // Determine slide direction based on navigation
       const begin = Offset(1.0, 0.0); // Slide from right
       const end = Offset.zero;
       const curve = Curves.easeInOut;

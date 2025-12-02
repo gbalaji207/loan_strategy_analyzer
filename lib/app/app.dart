@@ -4,6 +4,7 @@ import '../core/router/app_router.dart';
 import '../core/theme/app_theme.dart';
 import '../features/loan_analyzer/presentation/cubit/loan_input_cubit.dart';
 import '../features/loan_analyzer/presentation/cubit/payment_plan_cubit.dart';
+import '../features/loan_analyzer/presentation/cubit/results_cubit.dart';
 
 class LoanAnalyzerApp extends StatelessWidget {
   const LoanAnalyzerApp({super.key});
@@ -14,6 +15,7 @@ class LoanAnalyzerApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (context) => LoanInputCubit()),
         BlocProvider(create: (context) => PaymentPlanCubit()),
+        BlocProvider(create: (context) => ResultsCubit()),
       ],
       child: MaterialApp.router(
         title: 'Loan Strategy Analyzer',

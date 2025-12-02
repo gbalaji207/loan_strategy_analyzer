@@ -1,9 +1,9 @@
 class RouteNames {
   static const String strategyDetails = 'strategy-details';
-  static const String comparison = 'comparison';
+  static const String repaymentSchedule = 'repayment-schedule';
 }
 
 class RoutePaths {
   static const String strategyDetails = 'details/:strategyId';
-  static const String comparison = 'comparison';
+  static const String repaymentSchedule = 'schedule/:strategyId';
 }
