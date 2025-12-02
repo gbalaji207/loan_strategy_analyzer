@@ -5,6 +5,7 @@ import '../../data/services/loan_calculation_service.dart';
 import '../../domain/strategy_definitions.dart';
 
 /// Comprehensive line charts for strategy comparison over time
+/// Now with 4 universally applicable charts
 class ComparisonLineChartsWidget extends StatelessWidget {
   final StrategyComparisonResults results;
 
@@ -30,28 +31,20 @@ class ComparisonLineChartsWidget extends StatelessWidget {
             final use2Columns = constraints.maxWidth >= 1000;
 
             if (use2Columns) {
-              return Column(
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildMonthlyPaymentChart()),
-                      const SizedBox(width: 24),
-                      Expanded(child: _buildNetCostAccumulationChart()),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  _buildPrincipalVsInterestChart(),
+                  Expanded(child: _buildYearwisePaymentChart()),
+                  const SizedBox(width: 24),
+                  Expanded(child: _buildTaxBenefitsChart()),
                 ],
               );
             } else {
               return Column(
                 children: [
-                  _buildMonthlyPaymentChart(),
+                  _buildYearwisePaymentChart(),
                   const SizedBox(height: 24),
-                  _buildNetCostAccumulationChart(),
-                  const SizedBox(height: 32),
-                  _buildPrincipalVsInterestChart(),
+                  _buildTaxBenefitsChart(),
                 ],
               );
             }
@@ -383,13 +376,13 @@ class ComparisonLineChartsWidget extends StatelessWidget {
   }
 
   // ==========================================================================
-  // CHART 3: MONTHLY PAYMENT AMOUNT (SECONDARY) 💵
+  // CHART 3: YEAR-WISE TOTAL PAYMENTS (SECONDARY) 📅
   // ==========================================================================
 
-  Widget _buildMonthlyPaymentChart() {
+  Widget _buildYearwisePaymentChart() {
     return _ChartCard(
-      title: '3️⃣ Monthly Payment Amount',
-      subtitle: 'Cash flow impact - How much you pay each month',
+      title: '3️⃣ Year-wise Total Payments',
+      subtitle: 'Annual cash flow impact - How much you pay each year',
       child: AspectRatio(
         aspectRatio: 1.5,
         child: Padding(
@@ -413,7 +406,7 @@ class ComparisonLineChartsWidget extends StatelessWidget {
                 show: true,
                 bottomTitles: AxisTitles(
                   axisNameWidget: Text(
-                    'Months',
+                    'Year',
                     style: AppTheme.bodySmall.copyWith(
                       color: AppTheme.neutral600,
                     ),
@@ -421,7 +414,7 @@ class ComparisonLineChartsWidget extends StatelessWidget {
                   axisNameSize: 20,
                   sideTitles: SideTitles(
                     showTitles: true,
-                    interval: 60,
+                    interval: 5,
                     getTitlesWidget: (value, meta) {
                       return Text(
                         value.toInt().toString(),
@@ -432,7 +425,7 @@ class ComparisonLineChartsWidget extends StatelessWidget {
                 ),
                 leftTitles: AxisTitles(
                   axisNameWidget: Text(
-                    'Payment',
+                    'Total Paid',
                     style: AppTheme.bodySmall.copyWith(
                       color: AppTheme.neutral600,
                     ),
@@ -443,7 +436,7 @@ class ComparisonLineChartsWidget extends StatelessWidget {
                     reservedSize: 50,
                     getTitlesWidget: (value, meta) {
                       return Text(
-                        '₹${(value / 1000).toStringAsFixed(0)}K',
+                        '₹${(value / 100000).toStringAsFixed(0)}L',
                         style: AppTheme.bodySmall.copyWith(fontSize: 9),
                       );
                     },
@@ -463,11 +456,11 @@ class ComparisonLineChartsWidget extends StatelessWidget {
                   bottom: BorderSide(color: AppTheme.neutral300),
                 ),
               ),
-              minX: 0,
-              maxX: _getMaxTenureMonths().toDouble(),
+              minX: 1,
+              maxX: _getMaxTenureYears().toDouble(),
               minY: 0,
-              maxY: _getMaxPayment() * 1.2,
-              lineBarsData: _buildPaymentLines(),
+              maxY: _getMaxYearlyPayment() * 1.2,
+              lineBarsData: _buildYearlyPaymentLines(),
               lineTouchData: LineTouchData(
                 enabled: true,
                 touchTooltipData: LineTouchTooltipData(
@@ -484,7 +477,8 @@ class ComparisonLineChartsWidget extends StatelessWidget {
                         ),
                         children: [
                           TextSpan(
-                            text: '₹${spot.y.toStringAsFixed(0)}',
+                            text:
+                            'Year ${spot.x.toInt()}\n₹${(spot.y / 100000).toStringAsFixed(2)}L',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -505,40 +499,60 @@ class ComparisonLineChartsWidget extends StatelessWidget {
     );
   }
 
-  List<LineChartBarData> _buildPaymentLines() {
+  List<LineChartBarData> _buildYearlyPaymentLines() {
     final strategies = results.strategies.entries.toList();
     return List.generate(strategies.length, (index) {
       final entry = strategies[index];
       final isBest = entry.key == results.comparisonMetrics.bestStrategyId;
 
       return LineChartBarData(
-        spots: _generatePaymentSpots(entry.value),
-        isCurved: false,
+        spots: _generateYearlyPaymentSpots(entry.value),
+        isCurved: false, // Discrete years, so no curve
         color: isBest ? AppTheme.accentGreen : _getStrategyColor(index),
         barWidth: isBest ? 2.5 : 1.5,
         isStrokeCapRound: true,
-        dotData: const FlDotData(show: false),
+        dotData: FlDotData(
+          show: true,
+          getDotPainter: (spot, percent, barData, index) {
+            return FlDotCirclePainter(
+              radius: isBest ? 3 : 2,
+              color: barData.color!,
+              strokeWidth: 0,
+            );
+          },
+        ),
       );
     });
   }
 
-  List<FlSpot> _generatePaymentSpots(StrategyResult result) {
+  List<FlSpot> _generateYearlyPaymentSpots(StrategyResult result) {
     final spots = <FlSpot>[];
+    int currentYear = 1;
+    double yearTotal = 0;
+
     for (final payment in result.schedule) {
       final totalPayment = payment.emiAmount + payment.additionalPayment;
-      spots.add(FlSpot(payment.month.toDouble(), totalPayment));
+      yearTotal += totalPayment;
+
+      // At year end, add the spot
+      if (payment.month % 12 == 0 || payment.month == result.schedule.length) {
+        spots.add(FlSpot(currentYear.toDouble(), yearTotal));
+        currentYear++;
+        yearTotal = 0;
+      }
     }
+
     return spots;
   }
 
   // ==========================================================================
-  // CHART 4: NET COST ACCUMULATION (SECONDARY) 📊
+  // CHART 4: CUMULATIVE TAX BENEFITS (SECONDARY) 🎯
   // ==========================================================================
 
-  Widget _buildNetCostAccumulationChart() {
+  Widget _buildTaxBenefitsChart() {
     return _ChartCard(
-      title: '4️⃣ Net Cost Accumulation',
-      subtitle: 'True economic cost over time (with tax benefits)',
+      title: '4️⃣ Cumulative Tax Benefits',
+      subtitle: 'The "invisible savings" - Section 80C + 24(B) benefits over time',
       child: AspectRatio(
         aspectRatio: 1.5,
         child: Padding(
@@ -581,7 +595,7 @@ class ComparisonLineChartsWidget extends StatelessWidget {
                 ),
                 leftTitles: AxisTitles(
                   axisNameWidget: Text(
-                    'Net Cost',
+                    'Tax Savings',
                     style: AppTheme.bodySmall.copyWith(
                       color: AppTheme.neutral600,
                     ),
@@ -615,8 +629,8 @@ class ComparisonLineChartsWidget extends StatelessWidget {
               minX: 0,
               maxX: _getMaxTenureMonths().toDouble(),
               minY: 0,
-              maxY: _getMaxNetCost() * 1.1,
-              lineBarsData: _buildNetCostLines(),
+              maxY: _getMaxTaxBenefits() * 1.1,
+              lineBarsData: _buildTaxBenefitLines(),
               lineTouchData: LineTouchData(
                 enabled: true,
                 touchTooltipData: LineTouchTooltipData(
@@ -634,7 +648,7 @@ class ComparisonLineChartsWidget extends StatelessWidget {
                         children: [
                           TextSpan(
                             text:
-                            'Month ${spot.x.toInt()}\n₹${(spot.y / 100000).toStringAsFixed(2)}L',
+                            'Month ${spot.x.toInt()}\n₹${(spot.y / 1000).toStringAsFixed(1)}K',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -655,14 +669,14 @@ class ComparisonLineChartsWidget extends StatelessWidget {
     );
   }
 
-  List<LineChartBarData> _buildNetCostLines() {
+  List<LineChartBarData> _buildTaxBenefitLines() {
     final strategies = results.strategies.entries.toList();
     return List.generate(strategies.length, (index) {
       final entry = strategies[index];
       final isBest = entry.key == results.comparisonMetrics.bestStrategyId;
 
       return LineChartBarData(
-        spots: _generateNetCostSpots(entry.value),
+        spots: _generateTaxBenefitSpots(entry.value),
         isCurved: true,
         color: isBest ? AppTheme.accentGreen : _getStrategyColor(index),
         barWidth: isBest ? 2.5 : 1.5,
@@ -677,199 +691,13 @@ class ComparisonLineChartsWidget extends StatelessWidget {
     });
   }
 
-  List<FlSpot> _generateNetCostSpots(StrategyResult result) {
+  List<FlSpot> _generateTaxBenefitSpots(StrategyResult result) {
     final spots = <FlSpot>[];
-    double cumulativePrincipal = 0;
-    double cumulativeInterest = 0;
     double cumulativeTaxBenefit = 0;
 
     for (final payment in result.schedule) {
-      cumulativePrincipal += payment.principalPayment;
-      cumulativeInterest += payment.interestPayment;
       cumulativeTaxBenefit += payment.taxBenefit;
-
-      final netCost =
-          cumulativePrincipal + cumulativeInterest - cumulativeTaxBenefit;
-      spots.add(FlSpot(payment.month.toDouble(), netCost));
-    }
-    return spots;
-  }
-
-  // ==========================================================================
-  // CHART 5: PRINCIPAL VS INTEREST (EDUCATIONAL) 📚
-  // ==========================================================================
-
-  Widget _buildPrincipalVsInterestChart() {
-    // Show for best strategy only
-    final bestStrategyId = results.comparisonMetrics.bestStrategyId;
-    final bestResult = results.strategies[bestStrategyId]!;
-    final bestStrategy = StrategyDefinitions.getById(bestStrategyId)!;
-
-    return _ChartCard(
-      title: '5️⃣ Principal vs Interest Breakdown',
-      subtitle:
-      'How payment composition changes over time (${bestStrategy.shortTitle})',
-      child: AspectRatio(
-        aspectRatio: 2.2,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: LineChart(
-            LineChartData(
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: true,
-                getDrawingHorizontalLine: (value) => FlLine(
-                  color: AppTheme.neutral200,
-                  strokeWidth: 1,
-                ),
-                getDrawingVerticalLine: (value) => FlLine(
-                  color: AppTheme.neutral200,
-                  strokeWidth: 0.5,
-                  dashArray: [5, 5],
-                ),
-              ),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  axisNameWidget: Text(
-                    'Time (Months)',
-                    style: AppTheme.labelMedium.copyWith(
-                      color: AppTheme.neutral600,
-                    ),
-                  ),
-                  axisNameSize: 24,
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: 60,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        value.toInt().toString(),
-                        style: AppTheme.bodySmall.copyWith(fontSize: 10),
-                      );
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  axisNameWidget: Text(
-                    'Percentage',
-                    style: AppTheme.labelMedium.copyWith(
-                      color: AppTheme.neutral600,
-                    ),
-                  ),
-                  axisNameSize: 50,
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 50,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        '${value.toInt()}%',
-                        style: AppTheme.bodySmall.copyWith(fontSize: 10),
-                      );
-                    },
-                  ),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              borderData: FlBorderData(
-                show: true,
-                border: Border(
-                  left: BorderSide(color: AppTheme.neutral300),
-                  bottom: BorderSide(color: AppTheme.neutral300),
-                ),
-              ),
-              minX: 0,
-              maxX: bestResult.tenureMonths.toDouble(),
-              minY: 0,
-              maxY: 100,
-              lineBarsData: _buildPrincipalInterestLines(bestResult),
-              lineTouchData: LineTouchData(
-                enabled: true,
-                touchTooltipData: LineTouchTooltipData(
-                  getTooltipItems: (touchedSpots) {
-                    return touchedSpots.map((spot) {
-                      final isInterest = spot.barIndex == 0;
-                      return LineTooltipItem(
-                        '${isInterest ? 'Interest' : 'Principal'}\n',
-                        TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: '${spot.y.toStringAsFixed(1)}%',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList();
-                  },
-                ),
-              ),
-            ),
-            duration: const Duration(milliseconds: 800),
-            curve: Curves.easeInOutCubic,
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<LineChartBarData> _buildPrincipalInterestLines(StrategyResult result) {
-    return [
-      // Interest line
-      LineChartBarData(
-        spots: _generateInterestPercentageSpots(result),
-        isCurved: true,
-        color: AppTheme.accentRed.withValues(alpha: 0.8),
-        barWidth: 2.5,
-        isStrokeCapRound: true,
-        dotData: const FlDotData(show: false),
-        belowBarData: BarAreaData(
-          show: true,
-          color: AppTheme.accentRed.withValues(alpha: 0.2),
-        ),
-      ),
-      // Principal line
-      LineChartBarData(
-        spots: _generatePrincipalPercentageSpots(result),
-        isCurved: true,
-        color: AppTheme.primaryBlue.withValues(alpha: 0.8),
-        barWidth: 2.5,
-        isStrokeCapRound: true,
-        dotData: const FlDotData(show: false),
-        belowBarData: BarAreaData(
-          show: true,
-          color: AppTheme.primaryBlue.withValues(alpha: 0.2),
-        ),
-      ),
-    ];
-  }
-
-  List<FlSpot> _generateInterestPercentageSpots(StrategyResult result) {
-    final spots = <FlSpot>[];
-    for (final payment in result.schedule) {
-      final total = payment.principalPayment + payment.interestPayment;
-      final percentage = total > 0 ? (payment.interestPayment / total) * 100 : 0.0;
-      spots.add(FlSpot(payment.month.toDouble(), percentage));
-    }
-    return spots;
-  }
-
-  List<FlSpot> _generatePrincipalPercentageSpots(StrategyResult result) {
-    final spots = <FlSpot>[];
-    for (final payment in result.schedule) {
-      final total = payment.principalPayment + payment.interestPayment;
-      final percentage = total > 0 ? (payment.principalPayment / total) * 100 : 0.0;
-      spots.add(FlSpot(payment.month.toDouble(), percentage));
+      spots.add(FlSpot(payment.month.toDouble(), cumulativeTaxBenefit));
     }
     return spots;
   }
@@ -909,20 +737,25 @@ class ComparisonLineChartsWidget extends StatelessWidget {
         .reduce((a, b) => a > b ? a : b);
   }
 
-  double _getMaxPayment() {
+  double _getMaxYearlyPayment() {
     double max = 0;
     for (final result in results.strategies.values) {
+      double yearTotal = 0;
       for (final payment in result.schedule) {
-        final total = payment.emiAmount + payment.additionalPayment;
-        if (total > max) max = total;
+        final totalPayment = payment.emiAmount + payment.additionalPayment;
+        yearTotal += totalPayment;
+        if (payment.month % 12 == 0 || payment.month == result.schedule.length) {
+          if (yearTotal > max) max = yearTotal;
+          yearTotal = 0;
+        }
       }
     }
     return max;
   }
 
-  double _getMaxNetCost() {
+  double _getMaxTaxBenefits() {
     return results.strategies.values
-        .map((r) => r.netCost)
+        .map((r) => r.totalTaxBenefits)
         .reduce((a, b) => a > b ? a : b);
   }
 
@@ -930,6 +763,10 @@ class ComparisonLineChartsWidget extends StatelessWidget {
     return results.strategies.values
         .map((r) => r.tenureMonths)
         .reduce((a, b) => a > b ? a : b);
+  }
+
+  int _getMaxTenureYears() {
+    return (_getMaxTenureMonths() / 12).ceil();
   }
 }
 
@@ -1012,43 +849,23 @@ class _ChartCard extends StatelessWidget {
           // Legend
           Padding(
             padding: const EdgeInsets.all(16),
-            child: _buildLegend(),
+            child: Wrap(
+              spacing: 24,
+              runSpacing: 8,
+              children: [
+                _LegendItem(
+                  color: AppTheme.accentGreen,
+                  label: 'Best Strategy',
+                ),
+                _LegendItem(
+                  color: AppTheme.neutral400,
+                  label: 'Other Strategies',
+                ),
+              ],
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLegend() {
-    if (title.contains('Principal vs Interest')) {
-      return Wrap(
-        spacing: 24,
-        runSpacing: 8,
-        children: [
-          _LegendItem(
-            color: AppTheme.accentRed.withValues(alpha: 0.8),
-            label: 'Interest %',
-          ),
-          _LegendItem(
-            color: AppTheme.primaryBlue.withValues(alpha: 0.8),
-            label: 'Principal %',
-          ),
-        ],
-      );
-    }
-    return Wrap(
-      spacing: 24,
-      runSpacing: 8,
-      children: [
-        _LegendItem(
-          color: AppTheme.accentGreen,
-          label: 'Best Strategy',
-        ),
-        _LegendItem(
-          color: AppTheme.neutral400,
-          label: 'Other Strategies',
-        ),
-      ],
     );
   }
 }
